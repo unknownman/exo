@@ -25,6 +25,7 @@ dependencies:
   chewie: ^1.10.1
   shared_preferences: ^2.3.5
   fluttertoast: ^8.2.12
+  flutter_local_notifications: ^18.0.1
   lottie: ^3.3.1
 
 dev_dependencies:

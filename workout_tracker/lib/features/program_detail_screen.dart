@@ -20,6 +20,13 @@ class ProgramDetailScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('جزئیات برنامه'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.edit),
+            tooltip: 'ویرایش برنامه',
+            onPressed: () => context.go('/edit-program/$programId'),
+          ),
+        ],
       ),
       body: programAsync.when(
         data: (program) {
@@ -43,7 +50,9 @@ class ProgramDetailScreen extends ConsumerWidget {
                 ),
               ),
               const SizedBox(height: 24),
-              ...program.days.map((day) => _DaySection(day: day)),
+              ...program.days.map(
+                (day) => _DaySection(programId: program.id, day: day),
+              ),
             ],
           );
         },
@@ -55,9 +64,10 @@ class ProgramDetailScreen extends ConsumerWidget {
 }
 
 class _DaySection extends StatelessWidget {
+  final String programId;
   final dynamic day;
 
-  const _DaySection({required this.day});
+  const _DaySection({required this.programId, required this.day});
 
   @override
   Widget build(BuildContext context) {
@@ -84,7 +94,8 @@ class _DaySection extends StatelessWidget {
                 ),
                 const Spacer(),
                 TextButton.icon(
-                  onPressed: () => context.go('/workout/${day.id}'),
+                  onPressed: () =>
+                      context.go('/workout/$programId/${day.id}'),
                   icon: const Icon(Icons.play_arrow, size: 18),
                   label: const Text('شروع'),
                 ),
