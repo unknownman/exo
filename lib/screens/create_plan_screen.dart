@@ -9,6 +9,8 @@ class CreatePlanScreen extends ConsumerStatefulWidget {
   ConsumerState<CreatePlanScreen> createState() => _CreatePlanScreenState();
 }
 
+const _ordinals = ['اول', 'دوم', 'سوم', 'چهارم', 'پنجم', 'ششم', 'هفتم'];
+
 class _CreatePlanScreenState extends ConsumerState<CreatePlanScreen> {
   final _formKey = GlobalKey<FormState>();
   final _planNameController = TextEditingController();
@@ -26,9 +28,18 @@ class _CreatePlanScreenState extends ConsumerState<CreatePlanScreen> {
     super.dispose();
   }
 
+  void _reindexNames() {
+    for (int i = 0; i < _dayNames.length; i++) {
+      final ordinal = i < _ordinals.length ? _ordinals[i] : '${i + 1}';
+      _dayNames[i] = 'روز $ordinal';
+    }
+  }
+
   void _addDay() {
     setState(() {
-      _dayNames.add('روز ${_dayNames.length + 1}');
+      final index = _dayNames.length;
+      final ordinal = index < _ordinals.length ? _ordinals[index] : '${index + 1}';
+      _dayNames.add('روز $ordinal');
     });
   }
 
@@ -36,6 +47,7 @@ class _CreatePlanScreenState extends ConsumerState<CreatePlanScreen> {
     if (_dayNames.length > 1) {
       setState(() {
         _dayNames.removeAt(index);
+        _reindexNames();
       });
     }
   }
@@ -44,8 +56,10 @@ class _CreatePlanScreenState extends ConsumerState<CreatePlanScreen> {
     if (!_formKey.currentState!.validate()) return;
 
     final notifier = ref.read(workoutNotifierProvider.notifier);
-    await notifier.resetEverything();
-    await notifier.updatePlanName(_planNameController.text.trim());
+    await notifier.createPlan(
+      _planNameController.text.trim(),
+      dayNames: _dayNames,
+    );
 
     if (mounted) {
       Navigator.of(context).pop();
@@ -98,7 +112,12 @@ class _CreatePlanScreenState extends ConsumerState<CreatePlanScreen> {
                   return Card(
                     margin: const EdgeInsets.only(bottom: 8),
                     child: ListTile(
-                      leading: CircleAvatar(child: Text('${index + 1}')),
+                      leading: CircleAvatar(
+                        child: Text(
+                          index < _ordinals.length ? _ordinals[index] : '${index + 1}',
+                          style: const TextStyle(fontSize: 12),
+                        ),
+                      ),
                       title: Text(_dayNames[index]),
                       trailing: _dayNames.length > 1
                           ? IconButton(

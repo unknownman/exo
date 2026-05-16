@@ -45,8 +45,7 @@ class WorkoutNotifier extends _$WorkoutNotifier {
         orElse: () => plans.first,
       );
 
-      final restoredDayIndex =
-          savedDayIndex ?? _getNextUnlockedDayIndex(activePlan);
+      final restoredDayIndex = savedDayIndex ?? 0;
 
       List<WorkoutLog> workoutLogs = [];
       if (logsJson != null && logsJson.isNotEmpty) {
@@ -74,19 +73,6 @@ class WorkoutNotifier extends _$WorkoutNotifier {
         errorMessage: 'خطا در بارگذاری داده‌ها',
       );
     }
-  }
-
-  int _getNextUnlockedDayIndex(WorkoutPlan plan) {
-    for (int i = 0; i < plan.days.length; i++) {
-      if (plan.days[i].isUnlocked && !plan.days[i].isCompleted) {
-        return i;
-      }
-    }
-    final completedCount = plan.days.where((d) => d.isCompleted).length;
-    if (completedCount < plan.days.length) {
-      return completedCount;
-    }
-    return 0;
   }
 
   WorkoutPlanState _createDefaultState() {
@@ -266,7 +252,7 @@ class WorkoutNotifier extends _$WorkoutNotifier {
           equipment: 'وزن بدن',
         ),
       ],
-      isUnlocked: false,
+      isUnlocked: true,
       isCompleted: false,
     );
   }
@@ -341,7 +327,7 @@ class WorkoutNotifier extends _$WorkoutNotifier {
           equipment: 'وزن بدن',
         ),
       ],
-      isUnlocked: false,
+      isUnlocked: true,
       isCompleted: false,
     );
   }
@@ -415,45 +401,24 @@ class WorkoutNotifier extends _$WorkoutNotifier {
     final currentState = state.valueOrNull;
     if (currentState == null || currentState.plan == null) return;
 
-    final day = currentState.plan!.days.cast<WorkoutDay?>().firstWhere(
-      (d) => d?.id == dayId,
-      orElse: () => null,
-    );
-    if (day == null) return;
+    final dayIndex = currentState.plan!.days.indexWhere((d) => d.id == dayId);
+    if (dayIndex == -1) return;
+
+    final day = currentState.plan!.days[dayIndex];
     if (day.isCompleted) return;
 
-    final dayIndex = currentState.plan!.days.indexWhere((d) => d.id == dayId);
     final updatedDays = List<WorkoutDay>.from(currentState.plan!.days);
     updatedDays[dayIndex] = day.copyWith(
       isCompleted: true,
       completedAt: DateTime.now(),
     );
 
-    final nextDayIndex = (dayIndex + 1) % updatedDays.length;
-    final isLoopingBack = nextDayIndex <= dayIndex;
-
-    if (isLoopingBack && updatedDays.length > 1) {
-      for (int i = 0; i < updatedDays.length; i++) {
-        updatedDays[i] = updatedDays[i].copyWith(
-          isCompleted: false,
-          isUnlocked: i == nextDayIndex,
-          clearCompletedAt: true,
-        );
-      }
-    } else if (!updatedDays[nextDayIndex].isUnlocked) {
-      updatedDays[nextDayIndex] = updatedDays[nextDayIndex].copyWith(
-        isUnlocked: true,
-      );
-    }
-
     final updatedPlan = currentState.plan!.copyWith(
       days: updatedDays,
       updatedAt: DateTime.now(),
     );
 
-    final newCurrentIndex = isLoopingBack
-        ? nextDayIndex
-        : _getNextUnlockedDayIndex(updatedPlan);
+    final nextDayIndex = (dayIndex + 1) % updatedDays.length;
 
     await logCompletedWorkout(
       dayId: day.id,
@@ -463,7 +428,20 @@ class WorkoutNotifier extends _$WorkoutNotifier {
     );
 
     await _updateCurrentPlan(updatedPlan);
-    state = AsyncData(currentState.copyWith(currentDayIndex: newCurrentIndex));
+    state = AsyncData(
+      currentState.copyWith(currentDayIndex: nextDayIndex),
+    );
+  }
+
+  Future<void> setCurrentDayByIndex(int index) async {
+    final currentState = state.valueOrNull;
+    if (currentState == null || currentState.plan == null) return;
+    if (index < 0 || index >= currentState.plan!.days.length) return;
+
+    state = AsyncData(
+      currentState.copyWith(currentDayIndex: index, errorMessage: null),
+    );
+    await _saveData();
   }
 
   Future<void> setCurrentDay(String dayId) async {
@@ -476,16 +454,16 @@ class WorkoutNotifier extends _$WorkoutNotifier {
     state = AsyncData(
       currentState.copyWith(currentDayIndex: dayIndex, errorMessage: null),
     );
+    await _saveData();
   }
 
   Future<void> resetAllProgress() async {
     final currentState = state.valueOrNull;
     if (currentState == null || currentState.plan == null) return;
 
-    final resetDays = currentState.plan!.days.asMap().entries.map((entry) {
-      return entry.value.copyWith(
+    final resetDays = currentState.plan!.days.map((day) {
+      return day.copyWith(
         isCompleted: false,
-        isUnlocked: entry.key == 0,
         clearCompletedAt: true,
       );
     }).toList();
@@ -518,7 +496,7 @@ class WorkoutNotifier extends _$WorkoutNotifier {
       name: dayName,
       orderIndex: currentState.plan!.days.length,
       exercises: [],
-      isUnlocked: currentState.plan!.days.isEmpty,
+      isUnlocked: true,
       isCompleted: false,
     );
 
@@ -622,24 +600,39 @@ class WorkoutNotifier extends _$WorkoutNotifier {
     await prefs.setString('workout_logs', jsonEncode(encoded));
   }
 
-  Future<void> createPlan(String name) async {
+  Future<void> createPlan(String name, {List<String>? dayNames}) async {
     final currentState = state.valueOrNull;
     if (currentState == null) return;
+
+    final days = dayNames != null
+        ? List.generate(
+            dayNames.length,
+            (i) => WorkoutDay(
+              id:
+                  'day_${i + 1}_${DateTime.now().millisecondsSinceEpoch}',
+              name: dayNames[i],
+              orderIndex: i,
+              exercises: [],
+              isUnlocked: true,
+              isCompleted: false,
+            ),
+          )
+        : [
+            WorkoutDay(
+              id: 'day_1_${DateTime.now().millisecondsSinceEpoch}',
+              name: 'روز اول',
+              orderIndex: 0,
+              exercises: [],
+              isUnlocked: true,
+              isCompleted: false,
+            ),
+          ];
 
     final newPlan = WorkoutPlan(
       id: 'plan_${DateTime.now().millisecondsSinceEpoch}',
       name: name,
       description: 'برنامه جدید',
-      days: [
-        WorkoutDay(
-          id: 'day_1_${DateTime.now().millisecondsSinceEpoch}',
-          name: 'روز اول',
-          orderIndex: 0,
-          exercises: [],
-          isUnlocked: true,
-          isCompleted: false,
-        ),
-      ],
+      days: days,
       createdAt: DateTime.now(),
       isActive: true,
     );
@@ -669,14 +662,7 @@ class WorkoutNotifier extends _$WorkoutNotifier {
       newActivePlanId = updatedPlans.isNotEmpty ? updatedPlans.first.id : null;
     }
 
-    int newDayIndex = 0;
-    if (newActivePlanId != null) {
-      final newActivePlan = updatedPlans.firstWhere(
-        (p) => p.id == newActivePlanId,
-        orElse: () => updatedPlans.first,
-      );
-      newDayIndex = _getNextUnlockedDayIndex(newActivePlan);
-    }
+    const newDayIndex = 0;
 
     state = AsyncData(
       currentState.copyWith(
@@ -696,13 +682,10 @@ class WorkoutNotifier extends _$WorkoutNotifier {
     final exists = currentState.plans.any((p) => p.id == planId);
     if (!exists) return;
 
-    final targetPlan = currentState.plans.firstWhere((p) => p.id == planId);
-    final newDayIndex = _getNextUnlockedDayIndex(targetPlan);
-
     state = AsyncData(
       currentState.copyWith(
         activePlanId: planId,
-        currentDayIndex: newDayIndex.clamp(0, targetPlan.days.length - 1),
+        currentDayIndex: 0,
         errorMessage: null,
       ),
     );
