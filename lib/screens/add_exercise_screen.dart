@@ -134,10 +134,22 @@ class _AddExerciseScreenState extends ConsumerState<AddExerciseScreen> {
           );
         }
 
-        _selectedDayId ??= state.currentDay?.id ?? plan.days.first.id;
+        final unlockedDays = plan.days.where((d) => d.isUnlocked).toList();
+        if (unlockedDays.isEmpty) {
+          return const Scaffold(
+            body: Center(child: Text('هیچ روز فعالی وجود ندارد')),
+          );
+        }
 
-        final dayOptions = plan.days
-            .where((d) => d.isUnlocked)
+        if (_selectedDayId == null ||
+            !unlockedDays.any((d) => d.id == _selectedDayId)) {
+          _selectedDayId = state.currentDay?.id ?? unlockedDays.first.id;
+          if (!unlockedDays.any((d) => d.id == _selectedDayId)) {
+            _selectedDayId = unlockedDays.first.id;
+          }
+        }
+
+        final dayOptions = unlockedDays
             .map(
               (d) => DropdownMenuItem(
                 value: d.id,
