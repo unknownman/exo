@@ -5,10 +5,6 @@ import 'package:exo/providers/active_workout_provider.dart';
 import 'package:exo/providers/workout_provider.dart';
 import 'package:exo/providers/tts_provider.dart';
 
-final _previousRestingStateProvider = StateProvider<bool>((ref) => false);
-
-final _previousExerciseIndexProvider = StateProvider<int>((ref) => -1);
-
 class ActiveWorkoutScreen extends ConsumerStatefulWidget {
   final String dayId;
 
@@ -21,26 +17,16 @@ class ActiveWorkoutScreen extends ConsumerStatefulWidget {
 
 class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
   bool _initialized = false;
-
-  @override
-  void initState() {
-    super.initState();
-    ref.listen<bool>(ttsProvider, (previous, enabled) {
-      if (enabled && previous == false) {
-        final activeState = ref.read(activeWorkoutNotifierProvider);
-        final exercise = activeState.currentExercise;
-        if (exercise != null) {
-          ref.read(ttsProvider.notifier).announceExerciseStart(exercise.name);
-        }
-      }
-    });
-  }
+  bool _ttsWasEnabled = false;
+  bool _wasResting = false;
+  int _previousExerciseIndex = -1;
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     if (!_initialized) {
       _initialized = true;
+      _ttsWasEnabled = ref.read(ttsProvider);
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _initWorkout();
       });
@@ -68,27 +54,40 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
     final activeState = ref.watch(activeWorkoutNotifierProvider);
     final dayName = activeState.dayName ?? 'تمرین';
 
-    final wasResting = ref.watch(_previousRestingStateProvider);
-    if (activeState.isResting && !wasResting) {
+    final isTtsEnabled = ref.watch(ttsProvider);
+    if (isTtsEnabled && !_ttsWasEnabled) {
+      _ttsWasEnabled = true;
       final exercise = activeState.currentExercise;
       if (exercise != null) {
-        ref.read(ttsProvider.notifier).announceRestStart(exercise.restTime);
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          ref.read(ttsProvider.notifier).announceExerciseStart(exercise.name);
+        });
+      }
+    } else if (!isTtsEnabled) {
+      _ttsWasEnabled = false;
+    }
+
+    if (activeState.isResting && !_wasResting) {
+      final exercise = activeState.currentExercise;
+      if (exercise != null) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          ref.read(ttsProvider.notifier).announceRestStart(exercise.restTime);
+        });
       }
     }
-    ref.read(_previousRestingStateProvider.notifier).state =
-        activeState.isResting;
+    _wasResting = activeState.isResting;
 
-    final prevExerciseIndex = ref.watch(_previousExerciseIndexProvider);
-    if (activeState.currentExerciseIndex != prevExerciseIndex &&
+    if (activeState.currentExerciseIndex != _previousExerciseIndex &&
         activeState.currentExerciseIndex > 0 &&
         !activeState.isResting) {
       final exercise = activeState.currentExercise;
       if (exercise != null) {
-        ref.read(ttsProvider.notifier).announceExerciseStart(exercise.name);
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          ref.read(ttsProvider.notifier).announceExerciseStart(exercise.name);
+        });
       }
     }
-    ref.read(_previousExerciseIndexProvider.notifier).state =
-        activeState.currentExerciseIndex;
+    _previousExerciseIndex = activeState.currentExerciseIndex;
 
     final hasDay = ref.watch(
       activeWorkoutNotifierProvider.select((s) => s.hasDay),
@@ -426,20 +425,25 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
   ) {
     final hasNextExercise =
         state.currentExerciseIndex + 1 < state.totalExercises;
+    final isSkippingExercise = state.currentSet > 1 || state.isResting;
 
     return SafeArea(
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Row(
           children: [
-            if (hasNextExercise) ...[
+            TextButton.icon(
+              onPressed: isSkippingExercise ? provider.skipExercise : null,
+              icon: const Icon(Icons.skip_next),
+              label: Text(isSkippingExercise ? 'رد کردن تمرین' : 'رد کردن'),
+            ),
+            const Spacer(),
+            if (hasNextExercise)
               TextButton.icon(
                 onPressed: provider.nextExercise,
-                icon: const Icon(Icons.skip_next),
-                label: const Text('رد کردن'),
+                icon: const Icon(Icons.fast_forward),
+                label: const Text('تمرین بعدی'),
               ),
-              const Spacer(),
-            ],
           ],
         ),
       ),

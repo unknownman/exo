@@ -47,7 +47,22 @@ class DashboardScreen extends ConsumerWidget {
 
         return Scaffold(
           appBar: AppBar(
-            title: Text(plan.name),
+            title: state.plans.length > 1
+                ? DropdownButton<String>(
+                    value: state.activePlanId,
+                    underline: const SizedBox(),
+                    items: state.plans.map((p) {
+                      return DropdownMenuItem(value: p.id, child: Text(p.name));
+                    }).toList(),
+                    onChanged: (planId) {
+                      if (planId != null) {
+                        ref
+                            .read(workoutNotifierProvider.notifier)
+                            .switchActivePlan(planId);
+                      }
+                    },
+                  )
+                : Text(plan.name),
             actions: const [TTSToggleButton()],
           ),
           floatingActionButton: FloatingActionButton(

@@ -17,28 +17,48 @@ class WorkoutNotifier extends _$WorkoutNotifier {
   Future<WorkoutPlanState> _loadInitialData() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final planJson = prefs.getString('workout_plan');
+      final plansJson = prefs.getString('workout_plans');
+      final savedActivePlanId = prefs.getString('active_plan_id');
       final savedDayIndex = prefs.getInt('current_day_index');
 
-      if (planJson != null && planJson.isNotEmpty) {
-        final Map<String, dynamic> decoded =
-            jsonDecode(planJson) as Map<String, dynamic>;
-        if (decoded.isNotEmpty) {
-          final plan = WorkoutPlan.fromMap(decoded);
-          final restoredDayIndex =
-              savedDayIndex ?? _getNextUnlockedDayIndex(plan);
-          return WorkoutPlanState(
-            plan: plan,
-            currentDayIndex: restoredDayIndex.clamp(0, plan.days.length - 1),
-            isLoading: false,
-            errorMessage: null,
-          );
-        }
+      List<WorkoutPlan> plans = [];
+      String? activePlanId;
+
+      if (plansJson != null && plansJson.isNotEmpty) {
+        final List<dynamic> decoded = jsonDecode(plansJson) as List<dynamic>;
+        plans = decoded
+            .map((p) => WorkoutPlan.fromMap(p as Map<String, dynamic>))
+            .toList();
       }
-      return _createDefaultState();
-    } catch (e) {
+
+      if (plans.isEmpty) {
+        final defaultPlan = _createDefaultPlan();
+        plans = [defaultPlan];
+        activePlanId = defaultPlan.id;
+      } else {
+        activePlanId = savedActivePlanId ?? plans.first.id;
+      }
+
+      final activePlan = plans.firstWhere(
+        (p) => p.id == activePlanId,
+        orElse: () => plans.first,
+      );
+
+      final restoredDayIndex =
+          savedDayIndex ?? _getNextUnlockedDayIndex(activePlan);
+
       return WorkoutPlanState(
-        plan: _createDefaultPlan(),
+        plans: plans,
+        activePlanId: activePlanId,
+        currentDayIndex: restoredDayIndex.clamp(0, activePlan.days.length - 1),
+        isLoading: false,
+        errorMessage: null,
+      );
+    } catch (e) {
+      final defaultPlan = _createDefaultPlan();
+      return WorkoutPlanState(
+        plans: [defaultPlan],
+        activePlanId: defaultPlan.id,
         currentDayIndex: 0,
         isLoading: false,
         errorMessage: 'خطا در بارگذاری داده‌ها',
@@ -60,8 +80,10 @@ class WorkoutNotifier extends _$WorkoutNotifier {
   }
 
   WorkoutPlanState _createDefaultState() {
+    final defaultPlan = _createDefaultPlan();
     return WorkoutPlanState(
-      plan: _createDefaultPlan(),
+      plans: [defaultPlan],
+      activePlanId: defaultPlan.id,
       currentDayIndex: 0,
       isLoading: false,
       errorMessage: null,
@@ -248,10 +270,28 @@ class WorkoutNotifier extends _$WorkoutNotifier {
   Future<void> _saveData() async {
     final prefs = await SharedPreferences.getInstance();
     final currentState = state.valueOrNull;
-    if (currentState == null || currentState.plan == null) return;
-    final encoded = currentState.plan!.toMap();
-    await prefs.setString('workout_plan', jsonEncode(encoded));
+    if (currentState == null || currentState.plans.isEmpty) return;
+
+    final plansJson = currentState.plans.map((p) => p.toMap()).toList();
+    await prefs.setString('workout_plans', jsonEncode(plansJson));
+    if (currentState.activePlanId != null) {
+      await prefs.setString('active_plan_id', currentState.activePlanId!);
+    }
     await prefs.setInt('current_day_index', currentState.currentDayIndex);
+  }
+
+  Future<void> _updateCurrentPlan(WorkoutPlan updatedPlan) async {
+    final currentState = state.valueOrNull;
+    if (currentState == null) return;
+
+    final updatedPlans = currentState.plans.map((p) {
+      return p.id == updatedPlan.id ? updatedPlan : p;
+    }).toList();
+
+    state = AsyncData(
+      currentState.copyWith(plans: updatedPlans, errorMessage: null),
+    );
+    await _saveData();
   }
 
   Future<void> addExercise(String dayId, Exercise exercise) async {
@@ -270,10 +310,7 @@ class WorkoutNotifier extends _$WorkoutNotifier {
       updatedAt: DateTime.now(),
     );
 
-    state = AsyncData(
-      currentState.copyWith(plan: updatedPlan, errorMessage: null),
-    );
-    await _saveData();
+    await _updateCurrentPlan(updatedPlan);
   }
 
   Future<void> removeExercise(String dayId, String exerciseId) async {
@@ -292,10 +329,7 @@ class WorkoutNotifier extends _$WorkoutNotifier {
       updatedAt: DateTime.now(),
     );
 
-    state = AsyncData(
-      currentState.copyWith(plan: updatedPlan, errorMessage: null),
-    );
-    await _saveData();
+    await _updateCurrentPlan(updatedPlan);
   }
 
   Future<void> completeDay(String dayId) async {
@@ -340,14 +374,8 @@ class WorkoutNotifier extends _$WorkoutNotifier {
         ? nextDayIndex
         : _getNextUnlockedDayIndex(updatedPlan);
 
-    state = AsyncData(
-      currentState.copyWith(
-        plan: updatedPlan,
-        currentDayIndex: newCurrentIndex,
-        errorMessage: null,
-      ),
-    );
-    await _saveData();
+    await _updateCurrentPlan(updatedPlan);
+    state = AsyncData(currentState.copyWith(currentDayIndex: newCurrentIndex));
   }
 
   Future<void> setCurrentDay(String dayId) async {
@@ -379,19 +407,14 @@ class WorkoutNotifier extends _$WorkoutNotifier {
       updatedAt: DateTime.now(),
     );
 
-    state = AsyncData(
-      currentState.copyWith(
-        plan: updatedPlan,
-        currentDayIndex: 0,
-        errorMessage: null,
-      ),
-    );
-    await _saveData();
+    await _updateCurrentPlan(updatedPlan);
+    state = AsyncData(currentState.copyWith(currentDayIndex: 0));
   }
 
   Future<void> resetEverything() async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.remove('workout_plan');
+    await prefs.remove('workout_plans');
+    await prefs.remove('active_plan_id');
     state = AsyncData(_createDefaultState());
     await _saveData();
   }
@@ -417,10 +440,7 @@ class WorkoutNotifier extends _$WorkoutNotifier {
       updatedAt: DateTime.now(),
     );
 
-    state = AsyncData(
-      currentState.copyWith(plan: updatedPlan, errorMessage: null),
-    );
-    await _saveData();
+    await _updateCurrentPlan(updatedPlan);
   }
 
   Future<void> removeDay(String dayId) async {
@@ -446,14 +466,8 @@ class WorkoutNotifier extends _$WorkoutNotifier {
       newCurrentIndex = updatedDays.length - 1;
     }
 
-    state = AsyncData(
-      currentState.copyWith(
-        plan: updatedPlan,
-        currentDayIndex: newCurrentIndex,
-        errorMessage: null,
-      ),
-    );
-    await _saveData();
+    await _updateCurrentPlan(updatedPlan);
+    state = AsyncData(currentState.copyWith(currentDayIndex: newCurrentIndex));
   }
 
   Future<void> updatePlanName(String name) async {
@@ -465,20 +479,11 @@ class WorkoutNotifier extends _$WorkoutNotifier {
       updatedAt: DateTime.now(),
     );
 
-    state = AsyncData(
-      currentState.copyWith(plan: updatedPlan, errorMessage: null),
-    );
-    await _saveData();
+    await _updateCurrentPlan(updatedPlan);
   }
 
   Future<void> updatePlanOrder(WorkoutPlan updatedPlan) async {
-    final currentState = state.valueOrNull;
-    if (currentState == null) return;
-
-    state = AsyncData(
-      currentState.copyWith(plan: updatedPlan, errorMessage: null),
-    );
-    await _saveData();
+    await _updateCurrentPlan(updatedPlan);
   }
 
   Future<void> logCompletedWorkout({
@@ -528,34 +533,132 @@ class WorkoutNotifier extends _$WorkoutNotifier {
     final encoded = currentState.workoutLogs.map((l) => l.toMap()).toList();
     await prefs.setString('workout_logs', jsonEncode(encoded));
   }
+
+  Future<void> createPlan(String name) async {
+    final currentState = state.valueOrNull;
+    if (currentState == null) return;
+
+    final newPlan = WorkoutPlan(
+      id: 'plan_${DateTime.now().millisecondsSinceEpoch}',
+      name: name,
+      description: 'برنامه جدید',
+      days: [
+        WorkoutDay(
+          id: 'day_1_${DateTime.now().millisecondsSinceEpoch}',
+          name: 'روز اول',
+          orderIndex: 0,
+          exercises: [],
+          isUnlocked: true,
+          isCompleted: false,
+        ),
+      ],
+      createdAt: DateTime.now(),
+      isActive: true,
+    );
+
+    final updatedPlans = [...currentState.plans, newPlan];
+    state = AsyncData(
+      currentState.copyWith(
+        plans: updatedPlans,
+        activePlanId: newPlan.id,
+        currentDayIndex: 0,
+        errorMessage: null,
+      ),
+    );
+    await _saveData();
+  }
+
+  Future<void> deletePlan(String planId) async {
+    final currentState = state.valueOrNull;
+    if (currentState == null || currentState.plans.length <= 1) return;
+
+    final updatedPlans = currentState.plans
+        .where((p) => p.id != planId)
+        .toList();
+
+    String? newActivePlanId = currentState.activePlanId;
+    if (newActivePlanId == planId) {
+      newActivePlanId = updatedPlans.isNotEmpty ? updatedPlans.first.id : null;
+    }
+
+    int newDayIndex = 0;
+    if (newActivePlanId != null) {
+      final newActivePlan = updatedPlans.firstWhere(
+        (p) => p.id == newActivePlanId,
+        orElse: () => updatedPlans.first,
+      );
+      newDayIndex = _getNextUnlockedDayIndex(newActivePlan);
+    }
+
+    state = AsyncData(
+      currentState.copyWith(
+        plans: updatedPlans,
+        activePlanId: newActivePlanId,
+        currentDayIndex: newDayIndex,
+        errorMessage: null,
+      ),
+    );
+    await _saveData();
+  }
+
+  Future<void> switchActivePlan(String planId) async {
+    final currentState = state.valueOrNull;
+    if (currentState == null) return;
+
+    final exists = currentState.plans.any((p) => p.id == planId);
+    if (!exists) return;
+
+    final targetPlan = currentState.plans.firstWhere((p) => p.id == planId);
+    final newDayIndex = _getNextUnlockedDayIndex(targetPlan);
+
+    state = AsyncData(
+      currentState.copyWith(
+        activePlanId: planId,
+        currentDayIndex: newDayIndex.clamp(0, targetPlan.days.length - 1),
+        errorMessage: null,
+      ),
+    );
+    await _saveData();
+  }
 }
 
 class WorkoutPlanState {
-  final WorkoutPlan? plan;
+  final List<WorkoutPlan> plans;
+  final String? activePlanId;
   final int currentDayIndex;
   final bool isLoading;
   final String? errorMessage;
   final List<WorkoutLog> workoutLogs;
 
   const WorkoutPlanState({
-    this.plan,
+    this.plans = const [],
+    this.activePlanId,
     this.currentDayIndex = 0,
     this.isLoading = false,
     this.errorMessage,
     this.workoutLogs = const [],
   });
 
+  WorkoutPlan? get plan {
+    if (activePlanId == null) return plans.isNotEmpty ? plans.first : null;
+    return plans.cast<WorkoutPlan?>().firstWhere(
+      (p) => p?.id == activePlanId,
+      orElse: () => plans.isNotEmpty ? plans.first : null,
+    );
+  }
+
   WorkoutPlanState copyWith({
-    WorkoutPlan? plan,
+    List<WorkoutPlan>? plans,
+    String? activePlanId,
     int? currentDayIndex,
     bool? isLoading,
     String? errorMessage,
     bool clearError = false,
-    bool clearPlan = false,
     List<WorkoutLog>? workoutLogs,
   }) {
     return WorkoutPlanState(
-      plan: clearPlan ? null : (plan ?? this.plan),
+      plans: plans ?? this.plans,
+      activePlanId: activePlanId ?? this.activePlanId,
       currentDayIndex: currentDayIndex ?? this.currentDayIndex,
       isLoading: isLoading ?? this.isLoading,
       errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
@@ -564,9 +667,12 @@ class WorkoutPlanState {
   }
 
   WorkoutDay? get currentDay {
-    if (plan == null || plan!.days.isEmpty) return null;
-    if (currentDayIndex >= plan!.days.length) return plan!.days.first;
-    return plan!.days[currentDayIndex];
+    final currentPlan = plan;
+    if (currentPlan == null || currentPlan.days.isEmpty) return null;
+    if (currentDayIndex >= currentPlan.days.length) {
+      return currentPlan.days.first;
+    }
+    return currentPlan.days[currentDayIndex];
   }
 
   int get completedDaysCount {
@@ -578,15 +684,17 @@ class WorkoutPlanState {
   }
 
   bool get allDaysCompleted {
-    if (plan == null || plan!.days.isEmpty) return false;
+    final currentPlan = plan;
+    if (currentPlan == null || currentPlan.days.isEmpty) return false;
     return completedDaysCount == totalDays;
   }
 
   WorkoutDay? getDayById(String dayId) {
-    if (plan == null) return null;
-    return plan!.days.cast<WorkoutDay?>().firstWhere(
+    final currentPlan = plan;
+    if (currentPlan == null) return null;
+    return currentPlan.days.cast<WorkoutDay?>().firstWhere(
       (d) => d?.id == dayId,
-      orElse: () => plan!.days.first,
+      orElse: () => currentPlan.days.first,
     );
   }
 }

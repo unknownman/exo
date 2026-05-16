@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:exo/main.dart';
 import 'package:exo/screens/dashboard_screen.dart';
 import 'package:exo/screens/workout_history_screen.dart';
-import 'package:exo/screens/editor_screen.dart';
+import 'package:exo/screens/plan_editor_screen.dart';
+
+final selectedTabProvider = StateProvider<int>((ref) => 0);
 
 class ShellScreen extends ConsumerWidget {
   const ShellScreen({super.key});
@@ -20,7 +21,7 @@ class ShellScreen extends ConsumerWidget {
           children: const [
             DashboardScreen(),
             WorkoutHistoryScreen(),
-            EditorScreen(),
+            PlanEditorScreen(),
           ],
         ),
         bottomNavigationBar: BottomNavigationBar(

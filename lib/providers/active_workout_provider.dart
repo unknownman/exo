@@ -79,14 +79,27 @@ class ActiveWorkoutNotifier extends _$ActiveWorkoutNotifier {
 
   void skipExercise() {
     _stopTimer();
+    final exercise = state.currentExercise;
+    if (exercise == null) {
+      _completeWorkout();
+      return;
+    }
+
     state = state.copyWith(
+      isResting: false,
       isTimedExerciseRunning: false,
       remainingWorkoutSeconds: 0,
     );
-    nextExercise();
+
+    if (state.currentSet < exercise.sets) {
+      state = state.copyWith(currentSet: exercise.sets);
+      _startAutoRest(exercise.restTime);
+    } else {
+      _moveToNextExercise();
+    }
   }
 
-  void nextExercise() {
+  void _moveToNextExercise() {
     final exercises = state.exercises;
     if (exercises.isEmpty) {
       _completeWorkout();
@@ -105,6 +118,10 @@ class ActiveWorkoutNotifier extends _$ActiveWorkoutNotifier {
     } else {
       _completeWorkout();
     }
+  }
+
+  void nextExercise() {
+    _moveToNextExercise();
   }
 
   void finishWorkout() {
