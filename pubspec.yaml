@@ -1,5 +1,5 @@
 name: exo
-description: "Workout Tracker App"
+description: "Workout Tracker App - Production Ready"
 publish_to: 'none'
 version: 1.0.0+1
 
@@ -13,6 +13,8 @@ dependencies:
   flutter_riverpod: ^2.6.1
   riverpod_annotation: ^2.6.1
   shared_preferences: ^2.3.4
+  flutter_tts: ^4.2.0
+  google_fonts: ^6.2.1
 
 dev_dependencies:
   flutter_test:

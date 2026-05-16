@@ -1,13 +1,14 @@
 import 'dart:async';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../models/exercise.dart';
-import '../models/workout_day.dart';
+import '../models/workout_plan.dart';
 
 part 'active_workout_provider.g.dart';
 
 @riverpod
 class ActiveWorkoutNotifier extends _$ActiveWorkoutNotifier {
   Timer? _timer;
+  DateTime? _workoutStartTime;
 
   @override
   ActiveWorkoutState build() {
@@ -25,41 +26,46 @@ class ActiveWorkoutNotifier extends _$ActiveWorkoutNotifier {
       return;
     }
 
+    _workoutStartTime = DateTime.now();
+
     state = state.copyWith(
       dayId: day.id,
-      dayName: day.dayName,
+      dayName: day.name,
       exercises: day.exercises,
       currentExerciseIndex: 0,
       currentSet: 1,
       isResting: false,
+      isTimedExerciseRunning: false,
       isAllDone: false,
       clearError: true,
     );
-
-    _resetWorkoutTimer();
   }
 
   void toggleTimer() {
-    final exercise = state.currentExercise;
-    if (exercise == null || !exercise.isTimeBased) return;
-
-    if (state.isWorkoutTimerRunning) {
+    if (state.isTimedExerciseRunning) {
       _stopTimer();
-      state = state.copyWith(isWorkoutTimerRunning: false);
+      state = state.copyWith(isTimedExerciseRunning: false);
     } else {
-      _startWorkoutTimer();
+      _startTimedExercise();
     }
   }
 
   void finishSet() {
     _stopTimer();
-
     final exercise = state.currentExercise;
     if (exercise == null) return;
 
+    if (exercise.isTimeBased && state.isTimedExerciseRunning) {
+      return;
+    }
+
     if (state.currentSet < exercise.sets) {
-      state = state.copyWith(currentSet: state.currentSet + 1);
-      _resetWorkoutTimer();
+      state = state.copyWith(
+        currentSet: state.currentSet + 1,
+        isTimedExerciseRunning: false,
+        remainingWorkoutSeconds: 0,
+      );
+      _startAutoRest(exercise.restTime);
     } else {
       nextExercise();
     }
@@ -67,12 +73,21 @@ class ActiveWorkoutNotifier extends _$ActiveWorkoutNotifier {
 
   void skipRest() {
     _stopTimer();
+    state = state.copyWith(isResting: false, remainingRestSeconds: 0);
     _onRestEnd();
+  }
+
+  void skipExercise() {
+    _stopTimer();
+    state = state.copyWith(
+      isTimedExerciseRunning: false,
+      remainingWorkoutSeconds: 0,
+    );
+    nextExercise();
   }
 
   void nextExercise() {
     final exercises = state.exercises;
-
     if (exercises.isEmpty) {
       _completeWorkout();
       return;
@@ -84,14 +99,16 @@ class ActiveWorkoutNotifier extends _$ActiveWorkoutNotifier {
         currentExerciseIndex: nextIndex,
         currentSet: 1,
         isResting: false,
+        isTimedExerciseRunning: false,
+        remainingWorkoutSeconds: 0,
       );
-      _resetWorkoutTimer();
     } else {
       _completeWorkout();
     }
   }
 
   void finishWorkout() {
+    _stopTimer();
     state = ActiveWorkoutState.initial();
   }
 
@@ -100,42 +117,11 @@ class ActiveWorkoutNotifier extends _$ActiveWorkoutNotifier {
     state = ActiveWorkoutState.initial();
   }
 
-  void _resetWorkoutTimer() {
-    final exercise = state.currentExercise;
-    if (exercise == null || !exercise.isTimeBased) return;
-
-    state = state.copyWith(
-      remainingWorkoutSeconds: exercise.repsOrDuration,
-      isWorkoutTimerRunning: false,
-    );
-  }
-
-  void _startWorkoutTimer() {
-    _stopTimer();
-
-    state = state.copyWith(isWorkoutTimerRunning: true);
-
-    _timer = Timer.periodic(const Duration(seconds: 1), (_) {
-      if (state.remainingWorkoutSeconds <= 0) {
-        _stopTimer();
-        _startRest();
-        return;
-      }
-
-      state = state.copyWith(
-        remainingWorkoutSeconds: state.remainingWorkoutSeconds - 1,
-      );
-    });
-  }
-
-  void _startRest() {
-    final exercise = state.currentExercise;
-    if (exercise == null) return;
-
+  void _startAutoRest(int seconds) {
     state = state.copyWith(
       isResting: true,
-      isWorkoutTimerRunning: false,
-      remainingRestSeconds: exercise.restTime,
+      isTimedExerciseRunning: false,
+      remainingRestSeconds: seconds,
     );
 
     _timer = Timer.periodic(const Duration(seconds: 1), (_) {
@@ -144,7 +130,6 @@ class ActiveWorkoutNotifier extends _$ActiveWorkoutNotifier {
         _onRestEnd();
         return;
       }
-
       state = state.copyWith(
         remainingRestSeconds: state.remainingRestSeconds - 1,
       );
@@ -152,40 +137,83 @@ class ActiveWorkoutNotifier extends _$ActiveWorkoutNotifier {
   }
 
   void _onRestEnd() {
+    state = state.copyWith(isResting: false);
+    final exercise = state.currentExercise;
+    if (exercise == null) {
+      _completeWorkout();
+      return;
+    }
+    if (exercise.isTimeBased) {
+      _startTimedExercise();
+    }
+  }
+
+  void _startTimedExercise() {
+    _stopTimer();
+    final exercise = state.currentExercise;
+    if (exercise == null || !exercise.isTimeBased) return;
+
+    state = state.copyWith(
+      isTimedExerciseRunning: true,
+      remainingWorkoutSeconds: exercise.repsOrDuration,
+    );
+
+    _timer = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (state.remainingWorkoutSeconds <= 0) {
+        _stopTimer();
+        _onTimedExerciseComplete();
+        return;
+      }
+      state = state.copyWith(
+        remainingWorkoutSeconds: state.remainingWorkoutSeconds - 1,
+      );
+    });
+  }
+
+  void _onTimedExerciseComplete() {
     final exercise = state.currentExercise;
     if (exercise == null) {
       _completeWorkout();
       return;
     }
 
-    state = state.copyWith(isResting: false);
+    state = state.copyWith(isTimedExerciseRunning: false);
 
     if (state.currentSet < exercise.sets) {
       state = state.copyWith(currentSet: state.currentSet + 1);
-      _resetWorkoutTimer();
+      _startAutoRest(exercise.restTime);
     } else {
       nextExercise();
     }
   }
 
   void _completeWorkout() {
-    state = state.copyWith(isAllDone: true, isResting: false);
+    state = state.copyWith(
+      isAllDone: true,
+      isResting: false,
+      isTimedExerciseRunning: false,
+    );
   }
 
   void _stopTimer() {
     _timer?.cancel();
     _timer = null;
   }
+
+  int getWorkoutDurationMinutes() {
+    if (_workoutStartTime == null) return 0;
+    return DateTime.now().difference(_workoutStartTime!).inMinutes;
+  }
 }
 
 class ActiveWorkoutState {
-  final int? dayId;
+  final String? dayId;
   final String? dayName;
   final List<Exercise> exercises;
   final int currentExerciseIndex;
   final int currentSet;
   final bool isResting;
-  final bool isWorkoutTimerRunning;
+  final bool isTimedExerciseRunning;
   final int remainingWorkoutSeconds;
   final int remainingRestSeconds;
   final bool isAllDone;
@@ -199,7 +227,7 @@ class ActiveWorkoutState {
     this.currentExerciseIndex = 0,
     this.currentSet = 1,
     this.isResting = false,
-    this.isWorkoutTimerRunning = false,
+    this.isTimedExerciseRunning = false,
     this.remainingWorkoutSeconds = 0,
     this.remainingRestSeconds = 0,
     this.isAllDone = false,
@@ -210,25 +238,27 @@ class ActiveWorkoutState {
   factory ActiveWorkoutState.initial() => const ActiveWorkoutState();
 
   bool get hasDay => dayId != null;
-
   bool get hasError => errorMessage != null;
+  bool get canSkip => isResting || isTimedExerciseRunning;
 
   Exercise? get currentExercise {
     if (exercises.isEmpty) return null;
-    final idx = currentExerciseIndex;
-    return idx < exercises.length ? exercises[idx] : null;
+    return currentExerciseIndex < exercises.length
+        ? exercises[currentExerciseIndex]
+        : null;
   }
 
   int get totalExercises => exercises.length;
+  int get totalSets => exercises.fold(0, (sum, e) => sum + e.sets);
 
   ActiveWorkoutState copyWith({
-    int? dayId,
+    String? dayId,
     String? dayName,
     List<Exercise>? exercises,
     int? currentExerciseIndex,
     int? currentSet,
     bool? isResting,
-    bool? isWorkoutTimerRunning,
+    bool? isTimedExerciseRunning,
     int? remainingWorkoutSeconds,
     int? remainingRestSeconds,
     bool? isAllDone,
@@ -244,8 +274,8 @@ class ActiveWorkoutState {
       currentExerciseIndex: currentExerciseIndex ?? this.currentExerciseIndex,
       currentSet: currentSet ?? this.currentSet,
       isResting: isResting ?? this.isResting,
-      isWorkoutTimerRunning:
-          isWorkoutTimerRunning ?? this.isWorkoutTimerRunning,
+      isTimedExerciseRunning:
+          isTimedExerciseRunning ?? this.isTimedExerciseRunning,
       remainingWorkoutSeconds:
           remainingWorkoutSeconds ?? this.remainingWorkoutSeconds,
       remainingRestSeconds: remainingRestSeconds ?? this.remainingRestSeconds,

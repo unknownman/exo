@@ -21,17 +21,16 @@ class _AddExerciseScreenState extends ConsumerState<AddExerciseScreen> {
   final _imagePathController = TextEditingController();
 
   bool _isTimeBased = false;
+  String? _selectedEquipment;
+  String? _selectedDayId;
 
   @override
   void initState() {
     super.initState();
     _setsController.text = AppConstants.defaultSets.toString();
     _restTimeController.text = AppConstants.defaultRest.toString();
-    if (_isTimeBased) {
-      _repsOrDurationController.text = AppConstants.defaultDuration.toString();
-    } else {
-      _repsOrDurationController.text = AppConstants.defaultReps.toString();
-    }
+    _repsOrDurationController.text = AppConstants.defaultReps.toString();
+    _selectedEquipment = AppConstants.equipmentTypes.first;
   }
 
   @override
@@ -89,6 +88,7 @@ class _AddExerciseScreenState extends ConsumerState<AddExerciseScreen> {
 
   void _submit() {
     if (!_formKey.currentState!.validate()) return;
+    if (_selectedDayId == null || _selectedEquipment == null) return;
 
     final sets = int.tryParse(_setsController.text) ?? AppConstants.defaultSets;
     final repsOrDuration =
@@ -100,161 +100,182 @@ class _AddExerciseScreenState extends ConsumerState<AddExerciseScreen> {
         int.tryParse(_restTimeController.text) ?? AppConstants.defaultRest;
 
     final exercise = Exercise(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      id: 'ex_${DateTime.now().millisecondsSinceEpoch}',
       name: _nameController.text.trim(),
       sets: sets,
       repsOrDuration: repsOrDuration,
       isTimeBased: _isTimeBased,
       restTime: restTime,
-      equipment: AppConstants.equipmentTypes.first,
+      equipment: _selectedEquipment!,
       imagePath: _imagePathController.text.trim().isEmpty
           ? null
           : _imagePathController.text.trim(),
     );
 
-    ref.read(workoutNotifierProvider.notifier).addExercise(1, exercise);
+    ref
+        .read(workoutNotifierProvider.notifier)
+        .addExercise(_selectedDayId!, exercise);
     Navigator.of(context).pop();
   }
 
   @override
   Widget build(BuildContext context) {
-    return Directionality(
-      textDirection: TextDirection.rtl,
-      child: Scaffold(
-        appBar: AppBar(title: const Text('افزودن تمرین')),
-        body: SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                TextFormField(
-                  controller: _nameController,
-                  textCapitalization: TextCapitalization.words,
-                  decoration: const InputDecoration(
-                    labelText: 'نام تمرین',
-                    border: OutlineInputBorder(),
-                  ),
-                  validator: (v) => _validateNotEmpty(v, 'نام تمرین'),
-                ),
-                const SizedBox(height: 16),
-                DropdownButtonFormField<String>(
-                  initialValue: AppConstants.equipmentTypes.first,
-                  decoration: const InputDecoration(
-                    labelText: 'تجهیزات',
-                    border: OutlineInputBorder(),
-                  ),
-                  isExpanded: true,
-                  items: AppConstants.equipmentTypes
-                      .map(
-                        (e) => DropdownMenuItem(
-                          value: e,
-                          child: Text(e, overflow: TextOverflow.ellipsis),
-                        ),
-                      )
-                      .toList(),
-                  onChanged: (_) {},
-                ),
-                const SizedBox(height: 16),
-                TextFormField(
-                  controller: _imagePathController,
-                  decoration: const InputDecoration(
-                    labelText: 'آدرس تصویر (اختیاری)',
-                    hintText: 'https://example.com/image.png',
-                    border: OutlineInputBorder(),
-                  ),
-                  keyboardType: TextInputType.url,
-                ),
-                const SizedBox(height: 16),
-                TextFormField(
-                  controller: _setsController,
-                  keyboardType: TextInputType.number,
-                  inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                  decoration: const InputDecoration(
-                    labelText: 'تعداد ست‌ها',
-                    border: OutlineInputBorder(),
-                  ),
-                  validator: _validateSets,
-                ),
-                const SizedBox(height: 16),
-                SwitchListTile(
-                  title: Text(_isTimeBased ? 'زمانی' : 'تکراری'),
-                  subtitle: Text(
-                    _isTimeBased
-                        ? 'مدت زمان هر ست بر حسب ثانیه'
-                        : 'تعداد تکرار در هر ست',
-                  ),
-                  value: _isTimeBased,
-                  onChanged: (v) {
-                    setState(() {
-                      _isTimeBased = v;
-                      _repsOrDurationController.text = v
-                          ? AppConstants.defaultDuration.toString()
-                          : AppConstants.defaultReps.toString();
-                    });
-                  },
-                ),
-                TextFormField(
-                  controller: _repsOrDurationController,
-                  keyboardType: TextInputType.number,
-                  inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                  decoration: InputDecoration(
-                    labelText: _isTimeBased
-                        ? 'زمان هر ست (ثانیه)'
-                        : 'تعداد تکرار',
-                    border: const OutlineInputBorder(),
-                  ),
-                  validator: (v) => _validatePositiveInt(v, 'این فیلد'),
-                ),
-                const SizedBox(height: 16),
-                TextFormField(
-                  controller: _restTimeController,
-                  keyboardType: TextInputType.number,
-                  inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                  decoration: const InputDecoration(
-                    labelText: 'زمان استراحت (ثانیه)',
-                    border: OutlineInputBorder(),
-                  ),
-                  validator: _validateRestTime,
-                ),
-                const SizedBox(height: 16),
-                DropdownButtonFormField<int>(
-                  initialValue: 1,
-                  decoration: const InputDecoration(
-                    labelText: 'روز تمرینی',
-                    border: OutlineInputBorder(),
-                  ),
-                  isExpanded: true,
-                  items: const [
-                    DropdownMenuItem(
-                      value: 1,
-                      child: Text('روز اول', overflow: TextOverflow.ellipsis),
+    final stateAsync = ref.watch(workoutNotifierProvider);
+
+    return stateAsync.when(
+      loading: () =>
+          const Scaffold(body: Center(child: CircularProgressIndicator())),
+      error: (e, _) => Scaffold(body: Center(child: Text('خطا: $e'))),
+      data: (WorkoutPlanState state) {
+        final plan = state.plan;
+        if (plan == null || plan.days.isEmpty) {
+          return const Scaffold(
+            body: Center(child: Text('برنامه‌ای وجود ندارد')),
+          );
+        }
+
+        _selectedDayId ??= state.currentDay?.id ?? plan.days.first.id;
+
+        final dayOptions = plan.days
+            .where((d) => d.isUnlocked)
+            .map(
+              (d) => DropdownMenuItem(
+                value: d.id,
+                child: Text(d.name, overflow: TextOverflow.ellipsis),
+              ),
+            )
+            .toList();
+
+        return Directionality(
+          textDirection: TextDirection.rtl,
+          child: Scaffold(
+            appBar: AppBar(title: const Text('افزودن تمرین')),
+            body: SingleChildScrollView(
+              padding: const EdgeInsets.all(16),
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    TextFormField(
+                      controller: _nameController,
+                      textCapitalization: TextCapitalization.words,
+                      decoration: const InputDecoration(
+                        labelText: 'نام تمرین',
+                        border: OutlineInputBorder(),
+                      ),
+                      validator: (v) => _validateNotEmpty(v, 'نام تمرین'),
                     ),
-                    DropdownMenuItem(
-                      value: 2,
-                      child: Text('روز دوم', overflow: TextOverflow.ellipsis),
+                    const SizedBox(height: 16),
+                    DropdownButtonFormField<String>(
+                      initialValue: _selectedEquipment,
+                      decoration: const InputDecoration(
+                        labelText: 'تجهیزات',
+                        border: OutlineInputBorder(),
+                      ),
+                      isExpanded: true,
+                      items: AppConstants.equipmentTypes
+                          .map(
+                            (e) => DropdownMenuItem(
+                              value: e,
+                              child: Text(e, overflow: TextOverflow.ellipsis),
+                            ),
+                          )
+                          .toList(),
+                      onChanged: (v) {
+                        if (v != null) setState(() => _selectedEquipment = v);
+                      },
                     ),
-                    DropdownMenuItem(
-                      value: 3,
-                      child: Text('روز سوم', overflow: TextOverflow.ellipsis),
+                    const SizedBox(height: 16),
+                    DropdownButtonFormField<String>(
+                      initialValue: _selectedDayId,
+                      decoration: const InputDecoration(
+                        labelText: 'روز تمرینی',
+                        border: OutlineInputBorder(),
+                      ),
+                      isExpanded: true,
+                      items: dayOptions,
+                      onChanged: (v) {
+                        if (v != null) setState(() => _selectedDayId = v);
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    TextFormField(
+                      controller: _imagePathController,
+                      decoration: const InputDecoration(
+                        labelText: 'آدرس تصویر (اختیاری)',
+                        hintText: 'https://example.com/image.png',
+                        border: OutlineInputBorder(),
+                      ),
+                      keyboardType: TextInputType.url,
+                    ),
+                    const SizedBox(height: 16),
+                    TextFormField(
+                      controller: _setsController,
+                      keyboardType: TextInputType.number,
+                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                      decoration: const InputDecoration(
+                        labelText: 'تعداد ست‌ها',
+                        border: OutlineInputBorder(),
+                      ),
+                      validator: _validateSets,
+                    ),
+                    const SizedBox(height: 16),
+                    SwitchListTile(
+                      title: Text(_isTimeBased ? 'زمانی' : 'تکراری'),
+                      subtitle: Text(
+                        _isTimeBased
+                            ? 'مدت زمان هر ست بر حسب ثانیه'
+                            : 'تعداد تکرار در هر ست',
+                      ),
+                      value: _isTimeBased,
+                      onChanged: (v) {
+                        setState(() {
+                          _isTimeBased = v;
+                          _repsOrDurationController.text = v
+                              ? AppConstants.defaultDuration.toString()
+                              : AppConstants.defaultReps.toString();
+                        });
+                      },
+                    ),
+                    TextFormField(
+                      controller: _repsOrDurationController,
+                      keyboardType: TextInputType.number,
+                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                      decoration: InputDecoration(
+                        labelText: _isTimeBased
+                            ? 'زمان هر ست (ثانیه)'
+                            : 'تعداد تکرار',
+                        border: const OutlineInputBorder(),
+                      ),
+                      validator: (v) => _validatePositiveInt(v, 'این فیلد'),
+                    ),
+                    const SizedBox(height: 16),
+                    TextFormField(
+                      controller: _restTimeController,
+                      keyboardType: TextInputType.number,
+                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                      decoration: const InputDecoration(
+                        labelText: 'زمان استراحت (ثانیه)',
+                        border: OutlineInputBorder(),
+                      ),
+                      validator: _validateRestTime,
+                    ),
+                    const SizedBox(height: 24),
+                    ElevatedButton(
+                      onPressed: _submit,
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                      ),
+                      child: const Text('ثبت تمرین'),
                     ),
                   ],
-                  onChanged: (_) {},
                 ),
-                const SizedBox(height: 24),
-                ElevatedButton(
-                  onPressed: _submit,
-                  style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                  ),
-                  child: const Text('ثبت تمرین'),
-                ),
-              ],
+              ),
             ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 }

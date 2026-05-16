@@ -3,16 +3,16 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:exo/models/exercise.dart';
 import 'package:exo/providers/active_workout_provider.dart';
 import 'package:exo/providers/workout_provider.dart';
+import 'package:exo/providers/tts_provider.dart';
+
+final _previousRestingStateProvider = StateProvider<bool>((ref) => false);
+
+final _previousExerciseIndexProvider = StateProvider<int>((ref) => -1);
 
 class ActiveWorkoutScreen extends ConsumerStatefulWidget {
-  final int dayId;
-  final String dayName;
+  final String dayId;
 
-  const ActiveWorkoutScreen({
-    super.key,
-    required this.dayId,
-    required this.dayName,
-  });
+  const ActiveWorkoutScreen({super.key, required this.dayId});
 
   @override
   ConsumerState<ActiveWorkoutScreen> createState() =>
@@ -21,6 +21,20 @@ class ActiveWorkoutScreen extends ConsumerStatefulWidget {
 
 class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
   bool _initialized = false;
+
+  @override
+  void initState() {
+    super.initState();
+    ref.listen<bool>(ttsProvider, (previous, enabled) {
+      if (enabled && previous == false) {
+        final activeState = ref.read(activeWorkoutNotifierProvider);
+        final exercise = activeState.currentExercise;
+        if (exercise != null) {
+          ref.read(ttsProvider.notifier).announceExerciseStart(exercise.name);
+        }
+      }
+    });
+  }
 
   @override
   void didChangeDependencies() {
@@ -40,11 +54,42 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
     final day = workoutState.getDayById(widget.dayId);
     if (day != null) {
       ref.read(activeWorkoutNotifierProvider.notifier).startWorkout(day);
+      final ttsEnabled = ref.read(ttsProvider);
+      if (ttsEnabled && day.exercises.isNotEmpty) {
+        ref
+            .read(ttsProvider.notifier)
+            .announceExerciseStart(day.exercises.first.name);
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final activeState = ref.watch(activeWorkoutNotifierProvider);
+    final dayName = activeState.dayName ?? 'تمرین';
+
+    final wasResting = ref.watch(_previousRestingStateProvider);
+    if (activeState.isResting && !wasResting) {
+      final exercise = activeState.currentExercise;
+      if (exercise != null) {
+        ref.read(ttsProvider.notifier).announceRestStart(exercise.restTime);
+      }
+    }
+    ref.read(_previousRestingStateProvider.notifier).state =
+        activeState.isResting;
+
+    final prevExerciseIndex = ref.watch(_previousExerciseIndexProvider);
+    if (activeState.currentExerciseIndex != prevExerciseIndex &&
+        activeState.currentExerciseIndex > 0 &&
+        !activeState.isResting) {
+      final exercise = activeState.currentExercise;
+      if (exercise != null) {
+        ref.read(ttsProvider.notifier).announceExerciseStart(exercise.name);
+      }
+    }
+    ref.read(_previousExerciseIndexProvider.notifier).state =
+        activeState.currentExerciseIndex;
+
     final hasDay = ref.watch(
       activeWorkoutNotifierProvider.select((s) => s.hasDay),
     );
@@ -69,17 +114,17 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
     }
 
     if (isAllDone) {
-      return _buildDoneView();
+      return _buildDoneView(dayName);
     }
 
-    return _buildWorkoutView();
+    return _buildWorkoutView(dayName);
   }
 
   Widget _buildErrorView(String message) {
     return Directionality(
       textDirection: TextDirection.rtl,
       child: Scaffold(
-        appBar: AppBar(title: Text(widget.dayName)),
+        appBar: AppBar(title: const Text('خطا')),
         body: Center(
           child: Padding(
             padding: const EdgeInsets.all(32),
@@ -106,13 +151,13 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
     );
   }
 
-  Widget _buildDoneView() {
+  Widget _buildDoneView(String dayName) {
     final provider = ref.read(activeWorkoutNotifierProvider.notifier);
 
     return Directionality(
       textDirection: TextDirection.rtl,
       child: Scaffold(
-        appBar: AppBar(title: Text(widget.dayName)),
+        appBar: AppBar(title: Text(dayName)),
         body: Center(
           child: Padding(
             padding: const EdgeInsets.all(32),
@@ -127,7 +172,7 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'تمرین ${widget.dayName} ثبت شد',
+                  'تمرین $dayName ثبت شد',
                   style: TextStyle(fontSize: 16, color: Colors.grey.shade600),
                 ),
                 const SizedBox(height: 48),
@@ -160,10 +205,10 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
     );
   }
 
-  Widget _buildWorkoutView() {
-    final state = ref.watch(activeWorkoutNotifierProvider);
+  Widget _buildWorkoutView(String dayName) {
+    final activeState = ref.watch(activeWorkoutNotifierProvider);
     final provider = ref.read(activeWorkoutNotifierProvider.notifier);
-    final exercise = state.currentExercise;
+    final exercise = activeState.currentExercise;
 
     if (exercise == null) return const SizedBox.shrink();
 
@@ -171,24 +216,25 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
       textDirection: TextDirection.rtl,
       child: Scaffold(
         appBar: AppBar(
-          title: Text(widget.dayName),
+          title: Text(dayName),
           leading: IconButton(
             icon: const Icon(Icons.close),
             onPressed: () => _showExitDialog(provider),
           ),
         ),
         body: Container(
-          color: state.isResting ? Colors.blue.shade50 : null,
+          color: activeState.isResting ? Colors.blue.shade50 : null,
           child: Column(
             children: [
-              if (state.isResting) _buildRestBanner(state, provider),
+              if (activeState.isResting)
+                _buildRestBanner(activeState, provider),
               Expanded(
                 child: SingleChildScrollView(
                   padding: const EdgeInsets.all(24),
-                  child: _buildExerciseCard(state, provider, exercise),
+                  child: _buildExerciseCard(activeState, provider, exercise),
                 ),
               ),
-              _buildBottomControls(state, provider),
+              _buildBottomControls(activeState, provider),
             ],
           ),
         ),
@@ -330,9 +376,9 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
         ElevatedButton.icon(
           onPressed: provider.toggleTimer,
           icon: Icon(
-            state.isWorkoutTimerRunning ? Icons.pause : Icons.play_arrow,
+            state.isTimedExerciseRunning ? Icons.pause : Icons.play_arrow,
           ),
-          label: Text(state.isWorkoutTimerRunning ? 'توقف' : 'شروع'),
+          label: Text(state.isTimedExerciseRunning ? 'توقف' : 'شروع'),
           style: ElevatedButton.styleFrom(
             padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 14),
           ),
@@ -344,6 +390,8 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
   Widget _buildRepsSection(ActiveWorkoutNotifier provider) {
     final exercise = ref.read(activeWorkoutNotifierProvider).currentExercise;
     if (exercise == null) return const SizedBox.shrink();
+
+    final tts = ref.read(ttsProvider.notifier);
 
     return Column(
       children: [
@@ -357,7 +405,11 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
         ),
         const SizedBox(height: 24),
         ElevatedButton.icon(
-          onPressed: provider.finishSet,
+          onPressed: () {
+            final state = ref.read(activeWorkoutNotifierProvider);
+            tts.announceSetComplete(state.currentSet, exercise.sets);
+            provider.finishSet();
+          },
           icon: const Icon(Icons.check),
           label: const Text('پایان ست'),
           style: ElevatedButton.styleFrom(

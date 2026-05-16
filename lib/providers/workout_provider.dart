@@ -1,349 +1,592 @@
-import 'dart:async';
 import 'dart:convert';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../models/workout_day.dart';
 import '../models/exercise.dart';
+import '../models/workout_plan.dart';
+import '../models/workout_log.dart';
 
 part 'workout_provider.g.dart';
 
 @riverpod
 class WorkoutNotifier extends _$WorkoutNotifier {
   @override
-  Future<WorkoutState> build() async {
+  Future<WorkoutPlanState> build() async {
     return _loadInitialData();
   }
 
-  Future<WorkoutState> _loadInitialData() async {
+  Future<WorkoutPlanState> _loadInitialData() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final daysJson = prefs.getString('workout_days');
+      final planJson = prefs.getString('workout_plan');
+      final savedDayIndex = prefs.getInt('current_day_index');
 
-      if (daysJson != null && daysJson.isNotEmpty) {
-        final List<dynamic> decoded = jsonDecode(daysJson) as List<dynamic>;
+      if (planJson != null && planJson.isNotEmpty) {
+        final Map<String, dynamic> decoded =
+            jsonDecode(planJson) as Map<String, dynamic>;
         if (decoded.isNotEmpty) {
-          final days = decoded
-              .map((e) => WorkoutDay.fromMap(e as Map<String, dynamic>))
-              .toList();
-          return WorkoutState(days: days, isLoading: false, errorMessage: null);
+          final plan = WorkoutPlan.fromMap(decoded);
+          final restoredDayIndex =
+              savedDayIndex ?? _getNextUnlockedDayIndex(plan);
+          return WorkoutPlanState(
+            plan: plan,
+            currentDayIndex: restoredDayIndex.clamp(0, plan.days.length - 1),
+            isLoading: false,
+            errorMessage: null,
+          );
         }
       }
       return _createDefaultState();
     } catch (e) {
-      return WorkoutState(
-        days: _getDefaultDays(),
+      return WorkoutPlanState(
+        plan: _createDefaultPlan(),
+        currentDayIndex: 0,
         isLoading: false,
         errorMessage: 'خطا در بارگذاری داده‌ها',
       );
     }
   }
 
-  WorkoutState _createDefaultState() {
-    return WorkoutState(
-      days: _getDefaultDays(),
+  int _getNextUnlockedDayIndex(WorkoutPlan plan) {
+    for (int i = 0; i < plan.days.length; i++) {
+      if (plan.days[i].isUnlocked && !plan.days[i].isCompleted) {
+        return i;
+      }
+    }
+    final completedCount = plan.days.where((d) => d.isCompleted).length;
+    if (completedCount < plan.days.length) {
+      return completedCount;
+    }
+    return 0;
+  }
+
+  WorkoutPlanState _createDefaultState() {
+    return WorkoutPlanState(
+      plan: _createDefaultPlan(),
+      currentDayIndex: 0,
       isLoading: false,
       errorMessage: null,
     );
   }
 
-  List<WorkoutDay> _getDefaultDays() {
-    return [
-      WorkoutDay(
-        id: 1,
-        dayName: 'روز اول - سینه و شانه',
-        exercises: _getDay1Exercises(),
-        isUnlocked: true,
-      ),
-      WorkoutDay(
-        id: 2,
-        dayName: 'روز دوم - پا و شکم',
-        exercises: _getDay2Exercises(),
-        isUnlocked: false,
-      ),
-      WorkoutDay(
-        id: 3,
-        dayName: 'روز سوم - کمر و جلو بازو',
-        exercises: _getDay3Exercises(),
-        isUnlocked: false,
-      ),
-    ];
+  WorkoutPlan _createDefaultPlan() {
+    return WorkoutPlan(
+      id: 'default_plan',
+      name: 'برنامه تمرینی پیش‌فرض',
+      description: 'برنامه ۳ روزه برای مبتدیان',
+      days: [
+        _createDay('روز اول - سینه و شانه', 0),
+        _createDay('روز دوم - پا و شکم', 1),
+        _createDay('روز سوم - کمر و جلو بازو', 2),
+      ],
+      createdAt: DateTime.now(),
+      isActive: true,
+    );
   }
 
-  List<Exercise> _getDay1Exercises() => [
-    Exercise(
-      id: 'e1_1',
-      name: 'پرس سینه هالتر',
-      sets: 4,
-      repsOrDuration: 12,
-      isTimeBased: false,
-      restTime: 90,
-      equipment: 'هالتر',
-    ),
-    Exercise(
-      id: 'e1_2',
-      name: 'زیربغل سیم‌کش',
-      sets: 3,
-      repsOrDuration: 12,
-      isTimeBased: false,
-      restTime: 60,
-      equipment: 'سیم‌کش',
-    ),
-    Exercise(
-      id: 'e1_3',
-      name: 'پرس سرشانه',
-      sets: 3,
-      repsOrDuration: 10,
-      isTimeBased: false,
-      restTime: 60,
-      equipment: 'دستگاه',
-    ),
-    Exercise(
-      id: 'e1_4',
-      name: 'نشر از جانب',
-      sets: 3,
-      repsOrDuration: 15,
-      isTimeBased: false,
-      restTime: 45,
-      equipment: 'دمبل',
-    ),
-    Exercise(
-      id: 'e1_5',
-      name: 'کراس اور',
-      sets: 3,
-      repsOrDuration: 12,
-      isTimeBased: false,
-      restTime: 45,
-      equipment: 'سیم‌کش',
-    ),
-  ];
+  WorkoutDay _createDay(String name, int index) {
+    return WorkoutDay(
+      id: 'day_${index + 1}',
+      name: name,
+      orderIndex: index,
+      exercises: _getDefaultExercises(index),
+      isUnlocked: index == 0,
+      isCompleted: false,
+    );
+  }
 
-  List<Exercise> _getDay2Exercises() => [
-    Exercise(
-      id: 'e2_1',
-      name: 'اسکات',
-      sets: 4,
-      repsOrDuration: 12,
-      isTimeBased: false,
-      restTime: 90,
-      equipment: 'هالتر',
-    ),
-    Exercise(
-      id: 'e2_2',
-      name: 'پرس پا',
-      sets: 3,
-      repsOrDuration: 15,
-      isTimeBased: false,
-      restTime: 60,
-      equipment: 'دستگاه',
-    ),
-    Exercise(
-      id: 'e2_3',
-      name: 'لانگ',
-      sets: 3,
-      repsOrDuration: 10,
-      isTimeBased: false,
-      restTime: 45,
-      equipment: 'دمبل',
-    ),
-    Exercise(
-      id: 'e2_4',
-      name: 'کرانچ',
-      sets: 3,
-      repsOrDuration: 20,
-      isTimeBased: false,
-      restTime: 30,
-      equipment: 'بدون',
-    ),
-    Exercise(
-      id: 'e2_5',
-      name: 'پلانک',
-      sets: 3,
-      repsOrDuration: 45,
-      isTimeBased: true,
-      restTime: 30,
-      equipment: 'بدون',
-    ),
-  ];
-
-  List<Exercise> _getDay3Exercises() => [
-    Exercise(
-      id: 'e3_1',
-      name: 'زیربغل',
-      sets: 4,
-      repsOrDuration: 12,
-      isTimeBased: false,
-      restTime: 90,
-      equipment: 'هالتر',
-    ),
-    Exercise(
-      id: 'e3_2',
-      name: 'لت پول',
-      sets: 3,
-      repsOrDuration: 12,
-      isTimeBased: false,
-      restTime: 60,
-      equipment: 'دستگاه',
-    ),
-    Exercise(
-      id: 'e3_3',
-      name: 'بارفیکس',
-      sets: 3,
-      repsOrDuration: 8,
-      isTimeBased: false,
-      restTime: 60,
-      equipment: 'بارفیکس',
-    ),
-    Exercise(
-      id: 'e3_4',
-      name: 'جلو بازو لاری',
-      sets: 3,
-      repsOrDuration: 12,
-      isTimeBased: false,
-      restTime: 45,
-      equipment: 'دمبل',
-    ),
-    Exercise(
-      id: 'e3_5',
-      name: 'پشت بازو پushdown',
-      sets: 3,
-      repsOrDuration: 12,
-      isTimeBased: false,
-      restTime: 45,
-      equipment: 'سیم‌کش',
-    ),
-  ];
+  List<Exercise> _getDefaultExercises(int dayIndex) {
+    switch (dayIndex) {
+      case 0:
+        return [
+          Exercise(
+            id: 'e1_1',
+            name: 'پرس سینه هالتر',
+            sets: 4,
+            repsOrDuration: 12,
+            isTimeBased: false,
+            restTime: 90,
+            equipment: 'هالتر',
+          ),
+          Exercise(
+            id: 'e1_2',
+            name: 'زیربغل سیم‌کش',
+            sets: 3,
+            repsOrDuration: 12,
+            isTimeBased: false,
+            restTime: 60,
+            equipment: 'سیم‌کش',
+          ),
+          Exercise(
+            id: 'e1_3',
+            name: 'پرس سرشانه',
+            sets: 3,
+            repsOrDuration: 10,
+            isTimeBased: false,
+            restTime: 60,
+            equipment: 'دستگاه',
+          ),
+          Exercise(
+            id: 'e1_4',
+            name: 'نشر از جانب',
+            sets: 3,
+            repsOrDuration: 15,
+            isTimeBased: false,
+            restTime: 45,
+            equipment: 'دمبل',
+          ),
+          Exercise(
+            id: 'e1_5',
+            name: 'کراس اور',
+            sets: 3,
+            repsOrDuration: 12,
+            isTimeBased: false,
+            restTime: 45,
+            equipment: 'سیم‌کش',
+          ),
+        ];
+      case 1:
+        return [
+          Exercise(
+            id: 'e2_1',
+            name: 'اسکات',
+            sets: 4,
+            repsOrDuration: 12,
+            isTimeBased: false,
+            restTime: 90,
+            equipment: 'هالتر',
+          ),
+          Exercise(
+            id: 'e2_2',
+            name: 'پرس پا',
+            sets: 3,
+            repsOrDuration: 15,
+            isTimeBased: false,
+            restTime: 60,
+            equipment: 'دستگاه',
+          ),
+          Exercise(
+            id: 'e2_3',
+            name: 'لانگ',
+            sets: 3,
+            repsOrDuration: 10,
+            isTimeBased: false,
+            restTime: 45,
+            equipment: 'دمبل',
+          ),
+          Exercise(
+            id: 'e2_4',
+            name: 'کرانچ',
+            sets: 3,
+            repsOrDuration: 20,
+            isTimeBased: false,
+            restTime: 30,
+            equipment: 'بدون',
+          ),
+          Exercise(
+            id: 'e2_5',
+            name: 'پلانک',
+            sets: 3,
+            repsOrDuration: 45,
+            isTimeBased: true,
+            restTime: 30,
+            equipment: 'بدون',
+          ),
+        ];
+      case 2:
+        return [
+          Exercise(
+            id: 'e3_1',
+            name: 'زیربغل',
+            sets: 4,
+            repsOrDuration: 12,
+            isTimeBased: false,
+            restTime: 90,
+            equipment: 'هالتر',
+          ),
+          Exercise(
+            id: 'e3_2',
+            name: 'لت پول',
+            sets: 3,
+            repsOrDuration: 12,
+            isTimeBased: false,
+            restTime: 60,
+            equipment: 'دستگاه',
+          ),
+          Exercise(
+            id: 'e3_3',
+            name: 'بارفیکس',
+            sets: 3,
+            repsOrDuration: 8,
+            isTimeBased: false,
+            restTime: 60,
+            equipment: 'بارفیکس',
+          ),
+          Exercise(
+            id: 'e3_4',
+            name: 'جلو بازو لاری',
+            sets: 3,
+            repsOrDuration: 12,
+            isTimeBased: false,
+            restTime: 45,
+            equipment: 'دمبل',
+          ),
+          Exercise(
+            id: 'e3_5',
+            name: 'پشت بازو پushdown',
+            sets: 3,
+            repsOrDuration: 12,
+            isTimeBased: false,
+            restTime: 45,
+            equipment: 'سیم‌کش',
+          ),
+        ];
+      default:
+        return [];
+    }
+  }
 
   Future<void> _saveData() async {
     final prefs = await SharedPreferences.getInstance();
     final currentState = state.valueOrNull;
-    if (currentState == null) return;
-    final encoded = currentState.days.map((d) => d.toMap()).toList();
-    await prefs.setString('workout_days', jsonEncode(encoded));
+    if (currentState == null || currentState.plan == null) return;
+    final encoded = currentState.plan!.toMap();
+    await prefs.setString('workout_plan', jsonEncode(encoded));
+    await prefs.setInt('current_day_index', currentState.currentDayIndex);
   }
 
-  Future<void> addExercise(int dayId, Exercise exercise) async {
+  Future<void> addExercise(String dayId, Exercise exercise) async {
     final currentState = state.valueOrNull;
-    if (currentState == null) return;
+    if (currentState == null || currentState.plan == null) return;
 
-    final index = currentState.getDayIndex(dayId);
-    if (index == null) return;
-
-    final updatedDays = List<WorkoutDay>.from(currentState.days);
-    updatedDays[index] = updatedDays[index].addExercise(exercise);
-
-    state = AsyncData(
-      currentState.copyWith(days: updatedDays, errorMessage: null),
-    );
-    await _saveData();
-  }
-
-  Future<void> removeExercise(int dayId, String exerciseId) async {
-    final currentState = state.valueOrNull;
-    if (currentState == null) return;
-
-    final index = currentState.getDayIndex(dayId);
-    if (index == null) return;
-
-    final updatedDays = List<WorkoutDay>.from(currentState.days);
-    updatedDays[index] = updatedDays[index].removeExercise(exerciseId);
-
-    state = AsyncData(
-      currentState.copyWith(days: updatedDays, errorMessage: null),
-    );
-    await _saveData();
-  }
-
-  Future<void> completeDay(int dayId) async {
-    final currentState = state.valueOrNull;
-    if (currentState == null) return;
-
-    final index = currentState.getDayIndex(dayId);
-    if (index == null) return;
-
-    final currentDay = currentState.days[index];
-    if (currentDay.isCompletedToday) return;
-
-    final updatedDays = List<WorkoutDay>.from(currentState.days);
-    updatedDays[index] = currentDay.copyWith(isCompletedToday: true);
-
-    final nextDayIndex = index + 1;
-    if (nextDayIndex < updatedDays.length) {
-      final nextDay = updatedDays[nextDayIndex];
-      if (!nextDay.isUnlocked) {
-        updatedDays[nextDayIndex] = nextDay.copyWith(isUnlocked: true);
+    final updatedDays = currentState.plan!.days.map((day) {
+      if (day.id == dayId) {
+        return day.addExercise(exercise);
       }
+      return day;
+    }).toList();
+
+    final updatedPlan = currentState.plan!.copyWith(
+      days: updatedDays,
+      updatedAt: DateTime.now(),
+    );
+
+    state = AsyncData(
+      currentState.copyWith(plan: updatedPlan, errorMessage: null),
+    );
+    await _saveData();
+  }
+
+  Future<void> removeExercise(String dayId, String exerciseId) async {
+    final currentState = state.valueOrNull;
+    if (currentState == null || currentState.plan == null) return;
+
+    final updatedDays = currentState.plan!.days.map((day) {
+      if (day.id == dayId) {
+        return day.removeExercise(exerciseId);
+      }
+      return day;
+    }).toList();
+
+    final updatedPlan = currentState.plan!.copyWith(
+      days: updatedDays,
+      updatedAt: DateTime.now(),
+    );
+
+    state = AsyncData(
+      currentState.copyWith(plan: updatedPlan, errorMessage: null),
+    );
+    await _saveData();
+  }
+
+  Future<void> completeDay(String dayId) async {
+    final currentState = state.valueOrNull;
+    if (currentState == null || currentState.plan == null) return;
+
+    final dayIndex = currentState.plan!.days.indexWhere((d) => d.id == dayId);
+    if (dayIndex == -1) return;
+
+    final day = currentState.plan!.days[dayIndex];
+    if (day.isCompleted) return;
+
+    final updatedDays = List<WorkoutDay>.from(currentState.plan!.days);
+    updatedDays[dayIndex] = day.copyWith(
+      isCompleted: true,
+      completedAt: DateTime.now(),
+    );
+
+    final nextDayIndex = (dayIndex + 1) % updatedDays.length;
+    final isLoopingBack = nextDayIndex <= dayIndex;
+
+    if (isLoopingBack && updatedDays.length > 1) {
+      for (int i = 0; i < updatedDays.length; i++) {
+        updatedDays[i] = updatedDays[i].copyWith(
+          isCompleted: false,
+          isUnlocked: i == nextDayIndex,
+          clearCompletedAt: true,
+        );
+      }
+    } else if (!updatedDays[nextDayIndex].isUnlocked) {
+      updatedDays[nextDayIndex] = updatedDays[nextDayIndex].copyWith(
+        isUnlocked: true,
+      );
     }
 
+    final updatedPlan = currentState.plan!.copyWith(
+      days: updatedDays,
+      updatedAt: DateTime.now(),
+    );
+
+    final newCurrentIndex = isLoopingBack
+        ? nextDayIndex
+        : _getNextUnlockedDayIndex(updatedPlan);
+
     state = AsyncData(
-      currentState.copyWith(days: updatedDays, errorMessage: null),
+      currentState.copyWith(
+        plan: updatedPlan,
+        currentDayIndex: newCurrentIndex,
+        errorMessage: null,
+      ),
     );
     await _saveData();
+  }
+
+  Future<void> setCurrentDay(String dayId) async {
+    final currentState = state.valueOrNull;
+    if (currentState == null || currentState.plan == null) return;
+
+    final dayIndex = currentState.plan!.days.indexWhere((d) => d.id == dayId);
+    if (dayIndex == -1) return;
+
+    state = AsyncData(
+      currentState.copyWith(currentDayIndex: dayIndex, errorMessage: null),
+    );
   }
 
   Future<void> resetAllProgress() async {
     final currentState = state.valueOrNull;
-    if (currentState == null) return;
+    if (currentState == null || currentState.plan == null) return;
 
-    final resetDays = currentState.days.asMap().entries.map((entry) {
+    final resetDays = currentState.plan!.days.asMap().entries.map((entry) {
       return entry.value.copyWith(
-        isCompletedToday: false,
+        isCompleted: false,
         isUnlocked: entry.key == 0,
+        clearCompletedAt: true,
       );
     }).toList();
 
+    final updatedPlan = currentState.plan!.copyWith(
+      days: resetDays,
+      updatedAt: DateTime.now(),
+    );
+
     state = AsyncData(
-      currentState.copyWith(days: resetDays, errorMessage: null),
+      currentState.copyWith(
+        plan: updatedPlan,
+        currentDayIndex: 0,
+        errorMessage: null,
+      ),
     );
     await _saveData();
   }
 
   Future<void> resetEverything() async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.remove('workout_days');
+    await prefs.remove('workout_plan');
     state = AsyncData(_createDefaultState());
     await _saveData();
   }
+
+  Future<void> addDay(String dayName) async {
+    final currentState = state.valueOrNull;
+    if (currentState == null || currentState.plan == null) return;
+
+    final newDayId =
+        'day_${currentState.plan!.days.length + 1}_${DateTime.now().millisecondsSinceEpoch}';
+    final newDay = WorkoutDay(
+      id: newDayId,
+      name: dayName,
+      orderIndex: currentState.plan!.days.length,
+      exercises: [],
+      isUnlocked: currentState.plan!.days.isEmpty,
+      isCompleted: false,
+    );
+
+    final updatedDays = [...currentState.plan!.days, newDay];
+    final updatedPlan = currentState.plan!.copyWith(
+      days: updatedDays,
+      updatedAt: DateTime.now(),
+    );
+
+    state = AsyncData(
+      currentState.copyWith(plan: updatedPlan, errorMessage: null),
+    );
+    await _saveData();
+  }
+
+  Future<void> removeDay(String dayId) async {
+    final currentState = state.valueOrNull;
+    if (currentState == null || currentState.plan == null) return;
+    if (currentState.plan!.days.length <= 1) return;
+
+    final updatedDays = currentState.plan!.days
+        .where((d) => d.id != dayId)
+        .toList();
+
+    for (int i = 0; i < updatedDays.length; i++) {
+      updatedDays[i] = updatedDays[i].copyWith(orderIndex: i);
+    }
+
+    final updatedPlan = currentState.plan!.copyWith(
+      days: updatedDays,
+      updatedAt: DateTime.now(),
+    );
+
+    int newCurrentIndex = currentState.currentDayIndex;
+    if (newCurrentIndex >= updatedDays.length) {
+      newCurrentIndex = updatedDays.length - 1;
+    }
+
+    state = AsyncData(
+      currentState.copyWith(
+        plan: updatedPlan,
+        currentDayIndex: newCurrentIndex,
+        errorMessage: null,
+      ),
+    );
+    await _saveData();
+  }
+
+  Future<void> updatePlanName(String name) async {
+    final currentState = state.valueOrNull;
+    if (currentState == null || currentState.plan == null) return;
+
+    final updatedPlan = currentState.plan!.copyWith(
+      name: name,
+      updatedAt: DateTime.now(),
+    );
+
+    state = AsyncData(
+      currentState.copyWith(plan: updatedPlan, errorMessage: null),
+    );
+    await _saveData();
+  }
+
+  Future<void> updatePlanOrder(WorkoutPlan updatedPlan) async {
+    final currentState = state.valueOrNull;
+    if (currentState == null) return;
+
+    state = AsyncData(
+      currentState.copyWith(plan: updatedPlan, errorMessage: null),
+    );
+    await _saveData();
+  }
+
+  Future<void> logCompletedWorkout({
+    required String dayId,
+    required String dayName,
+    required List<Exercise> exercises,
+    required int durationMinutes,
+  }) async {
+    final currentState = state.valueOrNull;
+    if (currentState == null) return;
+
+    final log = WorkoutLog(
+      id: 'log_${DateTime.now().millisecondsSinceEpoch}',
+      dayId: dayId,
+      dayName: dayName,
+      completedAt: DateTime.now(),
+      exerciseCount: exercises.length,
+      totalSets: exercises.fold(0, (sum, e) => sum + e.sets),
+      totalDurationMinutes: durationMinutes,
+    );
+
+    final updatedLogs = [log, ...currentState.workoutLogs];
+    state = AsyncData(currentState.copyWith(workoutLogs: updatedLogs));
+    await _saveLogs();
+  }
+
+  Future<List<WorkoutLog>> getWorkoutLogs() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final logsJson = prefs.getString('workout_logs');
+      if (logsJson != null && logsJson.isNotEmpty) {
+        final List<dynamic> decoded = jsonDecode(logsJson) as List<dynamic>;
+        return decoded
+            .map((e) => WorkoutLog.fromMap(e as Map<String, dynamic>))
+            .toList();
+      }
+    } catch (e) {
+      // Ignore errors
+    }
+    return [];
+  }
+
+  Future<void> _saveLogs() async {
+    final currentState = state.valueOrNull;
+    if (currentState == null) return;
+    final prefs = await SharedPreferences.getInstance();
+    final encoded = currentState.workoutLogs.map((l) => l.toMap()).toList();
+    await prefs.setString('workout_logs', jsonEncode(encoded));
+  }
 }
 
-class WorkoutState {
-  final List<WorkoutDay> days;
+class WorkoutPlanState {
+  final WorkoutPlan? plan;
+  final int currentDayIndex;
   final bool isLoading;
   final String? errorMessage;
+  final List<WorkoutLog> workoutLogs;
 
-  const WorkoutState({
-    this.days = const [],
+  const WorkoutPlanState({
+    this.plan,
+    this.currentDayIndex = 0,
     this.isLoading = false,
     this.errorMessage,
+    this.workoutLogs = const [],
   });
 
-  WorkoutState copyWith({
-    List<WorkoutDay>? days,
+  WorkoutPlanState copyWith({
+    WorkoutPlan? plan,
+    int? currentDayIndex,
     bool? isLoading,
     String? errorMessage,
     bool clearError = false,
+    bool clearPlan = false,
+    List<WorkoutLog>? workoutLogs,
   }) {
-    return WorkoutState(
-      days: days ?? this.days,
+    return WorkoutPlanState(
+      plan: clearPlan ? null : (plan ?? this.plan),
+      currentDayIndex: currentDayIndex ?? this.currentDayIndex,
       isLoading: isLoading ?? this.isLoading,
       errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
+      workoutLogs: workoutLogs ?? this.workoutLogs,
     );
   }
 
-  List<WorkoutDay> get daysUnmodifiable => List.unmodifiable(days);
-
-  int get totalDays => days.length;
-
-  int get completedDaysCount => days.where((d) => d.isCompletedToday).length;
-
-  bool get allDaysCompleted => completedDaysCount == totalDays && totalDays > 0;
-
-  WorkoutDay? getDayById(int dayId) {
-    final index = days.indexWhere((d) => d.id == dayId);
-    return index >= 0 ? days[index] : null;
+  WorkoutDay? get currentDay {
+    if (plan == null || plan!.days.isEmpty) return null;
+    if (currentDayIndex >= plan!.days.length) return plan!.days.first;
+    return plan!.days[currentDayIndex];
   }
 
-  int? getDayIndex(int dayId) {
-    final index = days.indexWhere((d) => d.id == dayId);
-    return index >= 0 ? index : null;
+  int get completedDaysCount {
+    return plan?.days.where((d) => d.isCompleted).length ?? 0;
+  }
+
+  int get totalDays {
+    return plan?.days.length ?? 0;
+  }
+
+  bool get allDaysCompleted {
+    if (plan == null || plan!.days.isEmpty) return false;
+    return completedDaysCount == totalDays;
+  }
+
+  WorkoutDay? getDayById(String dayId) {
+    if (plan == null) return null;
+    return plan!.days.cast<WorkoutDay?>().firstWhere(
+      (d) => d?.id == dayId,
+      orElse: () => plan!.days.first,
+    );
   }
 }

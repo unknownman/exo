@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:exo/screens/home_screen.dart';
+import 'package:exo/screens/shell_screen.dart';
+import 'package:exo/core/theme/app_theme.dart';
+
+final selectedTabProvider = StateProvider<int>((ref) => 0);
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -15,8 +18,8 @@ class ExoApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'برنامه تمرینی ۳ روزه',
-      theme: ThemeData(colorSchemeSeed: Colors.blueGrey, useMaterial3: true),
-      home: const HomeScreen(),
+      theme: AppTheme.lightTheme,
+      home: const ShellScreen(),
     );
   }
 }
