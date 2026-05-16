@@ -1,38 +1,68 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:exo/models/workout_day.dart';
 import 'package:exo/providers/workout_provider.dart';
 import 'package:exo/screens/active_workout_screen.dart';
 import 'package:exo/screens/add_exercise_screen.dart';
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return Directionality(
-      textDirection: TextDirection.rtl,
-      child: Scaffold(
-        appBar: AppBar(title: const Text('برنامه تمرینی ۳ روزه')),
-        floatingActionButton: FloatingActionButton(
-          onPressed: () => Navigator.of(context).push(
-            MaterialPageRoute(builder: (_) => const AddExerciseScreen()),
+  Widget build(BuildContext context, WidgetRef ref) {
+    final workoutStateAsync = ref.watch(workoutNotifierProvider);
+
+    return workoutStateAsync.when(
+      loading: () =>
+          const Scaffold(body: Center(child: CircularProgressIndicator())),
+      error: (error, _) => Scaffold(
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.error_outline, size: 64, color: Colors.red),
+              const SizedBox(height: 16),
+              Text('خطا: $error'),
+            ],
           ),
-          child: const Icon(Icons.add),
-        ),
-        body: Consumer<WorkoutProvider>(
-          builder: (context, provider, _) {
-            return ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: provider.days.length,
-              itemBuilder: (context, index) {
-                final day = provider.days[index];
-                return _DayCard(day: day);
-              },
-            );
-          },
         ),
       ),
+      data: (workoutState) {
+        if (workoutState.isLoading) {
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          );
+        }
+
+        if (workoutState.errorMessage != null) {
+          return Scaffold(
+            body: Center(child: Text(workoutState.errorMessage!)),
+          );
+        }
+
+        final days = workoutState.days;
+
+        return Directionality(
+          textDirection: TextDirection.rtl,
+          child: Scaffold(
+            appBar: AppBar(title: const Text('برنامه تمرینی ۳ روزه')),
+            floatingActionButton: FloatingActionButton(
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const AddExerciseScreen()),
+              ),
+              child: const Icon(Icons.add),
+            ),
+            body: ListView.builder(
+              padding: const EdgeInsets.all(16),
+              itemCount: days.length,
+              itemBuilder: (context, index) {
+                final day = days[index];
+                return _DayCard(day: day);
+              },
+            ),
+          ),
+        );
+      },
     );
   }
 }
@@ -44,13 +74,12 @@ class _DayCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isLocked = !day.isUnlocked;
-    final isCompleted = day.isCompletedToday;
-
     return Card(
       margin: const EdgeInsets.only(bottom: 16),
-      color: isLocked ? Colors.grey[300] : null,
-      child: isLocked ? _buildLockedCard() : _buildUnlockedCard(context, isCompleted),
+      color: !day.isUnlocked ? Colors.grey[300] : null,
+      child: !day.isUnlocked
+          ? _buildLockedCard()
+          : _buildUnlockedCard(context, day.isCompletedToday),
     );
   }
 
@@ -73,7 +102,10 @@ class _DayCard extends StatelessWidget {
               Expanded(
                 child: Text(
                   day.dayName,
-                  style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
               if (isCompleted)
@@ -87,13 +119,15 @@ class _DayCard extends StatelessWidget {
               child: Text('هنوز تمرینی اضافه نشده'),
             )
           else
-            ...day.exercises.map((ex) => Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 4),
-                  child: Text(
-                    '${ex.name} | ${ex.equipment} | ${ex.sets} ست × ${ex.repsOrDuration} ${ex.isTimeBased ? 'ثانیه' : 'تکرار'} | استراحت: ${ex.restTime}ث',
-                    style: const TextStyle(fontSize: 14),
-                  ),
-                )),
+            ...day.exercises.map(
+              (ex) => Padding(
+                padding: const EdgeInsets.symmetric(vertical: 4),
+                child: Text(
+                  '${ex.name} | ${ex.equipment} | ${ex.sets} ست × ${ex.repsOrDuration} ${ex.isTimeBased ? 'ثانیه' : 'تکرار'} | استراحت: ${ex.restTime}ث',
+                  style: const TextStyle(fontSize: 14),
+                ),
+              ),
+            ),
           const SizedBox(height: 16),
           SizedBox(
             width: double.infinity,
@@ -101,10 +135,13 @@ class _DayCard extends StatelessWidget {
               onPressed: isCompleted
                   ? null
                   : () => Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (_) => ActiveWorkoutScreen(day: day),
+                      MaterialPageRoute(
+                        builder: (_) => ActiveWorkoutScreen(
+                          dayId: day.id,
+                          dayName: day.dayName,
                         ),
                       ),
+                    ),
               icon: Icon(isCompleted ? Icons.check : Icons.play_arrow),
               label: Text(isCompleted ? 'انجام شد' : 'شروع تمرین'),
               style: ElevatedButton.styleFrom(

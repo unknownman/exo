@@ -1,7 +1,3 @@
-/// WorkoutDay Model
-/// نسخه: ۱.۰
-/// تاریخ: ۱۴۰۴/۰۲/۲۵
-
 import 'exercise.dart';
 
 class WorkoutDay {
