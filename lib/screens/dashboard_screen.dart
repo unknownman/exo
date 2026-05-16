@@ -48,19 +48,41 @@ class DashboardScreen extends ConsumerWidget {
         return Scaffold(
           appBar: AppBar(
             title: state.plans.length > 1
-                ? DropdownButton<String>(
-                    value: state.activePlanId,
-                    underline: const SizedBox(),
-                    items: state.plans.map((p) {
-                      return DropdownMenuItem(value: p.id, child: Text(p.name));
-                    }).toList(),
-                    onChanged: (planId) {
-                      if (planId != null) {
-                        ref
-                            .read(workoutNotifierProvider.notifier)
-                            .switchActivePlan(planId);
-                      }
-                    },
+                ? Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withAlpha(25),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: DropdownButtonHideUnderline(
+                      child: DropdownButton<String>(
+                        value: state.activePlanId,
+                        isExpanded: true,
+                        icon: Icon(
+                          Icons.arrow_drop_down,
+                          color: Theme.of(context).colorScheme.onPrimary,
+                        ),
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          color: Theme.of(context).colorScheme.onPrimary,
+                        ),
+                        items: state.plans.map((p) {
+                          return DropdownMenuItem(
+                            value: p.id,
+                            child: Text(p.name),
+                          );
+                        }).toList(),
+                        onChanged: (planId) {
+                          if (planId != null) {
+                            ref
+                                .read(workoutNotifierProvider.notifier)
+                                .switchActivePlan(planId);
+                          }
+                        },
+                      ),
+                    ),
                   )
                 : Text(plan.name),
             actions: const [TTSToggleButton()],

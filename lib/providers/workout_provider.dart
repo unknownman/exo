@@ -20,6 +20,7 @@ class WorkoutNotifier extends _$WorkoutNotifier {
       final plansJson = prefs.getString('workout_plans');
       final savedActivePlanId = prefs.getString('active_plan_id');
       final savedDayIndex = prefs.getInt('current_day_index');
+      final logsJson = prefs.getString('workout_logs');
 
       List<WorkoutPlan> plans = [];
       String? activePlanId;
@@ -47,12 +48,21 @@ class WorkoutNotifier extends _$WorkoutNotifier {
       final restoredDayIndex =
           savedDayIndex ?? _getNextUnlockedDayIndex(activePlan);
 
+      List<WorkoutLog> workoutLogs = [];
+      if (logsJson != null && logsJson.isNotEmpty) {
+        final List<dynamic> decodedLogs = jsonDecode(logsJson) as List<dynamic>;
+        workoutLogs = decodedLogs
+            .map((l) => WorkoutLog.fromMap(l as Map<String, dynamic>))
+            .toList();
+      }
+
       return WorkoutPlanState(
         plans: plans,
         activePlanId: activePlanId,
         currentDayIndex: restoredDayIndex.clamp(0, activePlan.days.length - 1),
         isLoading: false,
         errorMessage: null,
+        workoutLogs: workoutLogs,
       );
     } catch (e) {
       final defaultPlan = _createDefaultPlan();
@@ -373,6 +383,13 @@ class WorkoutNotifier extends _$WorkoutNotifier {
     final newCurrentIndex = isLoopingBack
         ? nextDayIndex
         : _getNextUnlockedDayIndex(updatedPlan);
+
+    await logCompletedWorkout(
+      dayId: day.id,
+      dayName: day.name,
+      exercises: day.exercises,
+      durationMinutes: day.estimatedDurationMinutes,
+    );
 
     await _updateCurrentPlan(updatedPlan);
     state = AsyncData(currentState.copyWith(currentDayIndex: newCurrentIndex));

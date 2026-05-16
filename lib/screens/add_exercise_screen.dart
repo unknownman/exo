@@ -141,12 +141,15 @@ class _AddExerciseScreenState extends ConsumerState<AddExerciseScreen> {
           );
         }
 
-        if (_selectedDayId == null ||
-            !unlockedDays.any((d) => d.id == _selectedDayId)) {
-          _selectedDayId = state.currentDay?.id ?? unlockedDays.first.id;
-          if (!unlockedDays.any((d) => d.id == _selectedDayId)) {
-            _selectedDayId = unlockedDays.first.id;
-          }
+        String effectiveDayId;
+        if (_selectedDayId != null &&
+            unlockedDays.any((d) => d.id == _selectedDayId)) {
+          effectiveDayId = _selectedDayId!;
+        } else if (state.currentDay?.id != null &&
+            unlockedDays.any((d) => d.id == state.currentDay!.id)) {
+          effectiveDayId = state.currentDay!.id;
+        } else {
+          effectiveDayId = unlockedDays.first.id;
         }
 
         final dayOptions = unlockedDays
@@ -200,7 +203,7 @@ class _AddExerciseScreenState extends ConsumerState<AddExerciseScreen> {
                     ),
                     const SizedBox(height: 16),
                     DropdownButtonFormField<String>(
-                      initialValue: _selectedDayId,
+                      initialValue: effectiveDayId,
                       decoration: const InputDecoration(
                         labelText: 'روز تمرینی',
                         border: OutlineInputBorder(),
