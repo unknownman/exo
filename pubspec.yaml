@@ -14,7 +14,6 @@ dependencies:
   riverpod_annotation: ^2.6.1
   shared_preferences: ^2.3.4
   flutter_tts: ^4.2.0
-  google_fonts: ^6.2.1
 
 dev_dependencies:
   flutter_test:
@@ -25,3 +24,13 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+
+  assets:
+    - assets/fonts/
+
+  fonts:
+    - family: Vazir
+      fonts:
+        - asset: assets/fonts/Vazir-Regular.ttf
+        - asset: assets/fonts/Vazir-Bold.ttf
+          weight: 700

@@ -4,6 +4,8 @@ import 'package:exo/models/exercise.dart';
 import 'package:exo/providers/active_workout_provider.dart';
 import 'package:exo/providers/workout_provider.dart';
 import 'package:exo/providers/tts_provider.dart';
+import 'package:exo/core/theme/app_theme.dart';
+import 'package:exo/widgets/tts_toggle_button.dart';
 
 class ActiveWorkoutScreen extends ConsumerStatefulWidget {
   final String dayId;
@@ -220,9 +222,12 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
             icon: const Icon(Icons.close),
             onPressed: () => _showExitDialog(provider),
           ),
+          actions: const [TTSToggleButton()],
         ),
         body: Container(
-          color: activeState.isResting ? Colors.blue.shade50 : null,
+          color: activeState.isResting
+              ? AppTheme.tealPrimary.withAlpha(15)
+              : null,
           child: Column(
             children: [
               if (activeState.isResting)
@@ -249,32 +254,97 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
       width: double.infinity,
       padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 24),
       decoration: BoxDecoration(
-        color: Colors.blue.shade100,
+        gradient: LinearGradient(
+          colors: [AppTheme.tealPrimary, AppTheme.tealDark],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
         borderRadius: const BorderRadius.vertical(bottom: Radius.circular(24)),
       ),
       child: SafeArea(
         bottom: false,
         child: Column(
           children: [
-            const Text(
-              'زمان استراحت',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.timer, color: Colors.white70, size: 20),
+                const SizedBox(width: 8),
+                const Text(
+                  'زمان استراحت',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+              ],
             ),
             const SizedBox(height: 8),
             Text(
               formatWorkoutTime(state.remainingRestSeconds),
-              style: const TextStyle(fontSize: 48, fontWeight: FontWeight.w300),
-            ),
-            const SizedBox(height: 8),
-            TextButton(
-              onPressed: provider.skipRest,
-              child: const Text(
-                'رد کردن استراحت',
-                style: TextStyle(fontSize: 16),
+              style: const TextStyle(
+                fontSize: 56,
+                fontWeight: FontWeight.w200,
+                color: Colors.white,
               ),
+            ),
+            const SizedBox(height: 12),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                TextButton.icon(
+                  onPressed: provider.skipRest,
+                  icon: const Icon(Icons.skip_next, color: Colors.white),
+                  label: const Text(
+                    'رد کردن',
+                    style: TextStyle(color: Colors.white),
+                  ),
+                  style: TextButton.styleFrom(
+                    backgroundColor: Colors.white.withAlpha(25),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                TextButton.icon(
+                  onPressed: () => _showAutoSkipDialog(provider),
+                  icon: const Icon(Icons.settings, color: Colors.white),
+                  label: const Text(
+                    'تنظیمات',
+                    style: TextStyle(color: Colors.white),
+                  ),
+                  style: TextButton.styleFrom(
+                    backgroundColor: Colors.white.withAlpha(25),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  void _showAutoSkipDialog(ActiveWorkoutNotifier provider) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('تنظیمات استراحت'),
+        content: const Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [Text('این قابلیت در نسخه بعدی فعال خواهد شد.')],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('بستن'),
+          ),
+        ],
       ),
     );
   }
@@ -286,29 +356,43 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
   ) {
     return Column(
       children: [
-        Icon(
-          _getEquipmentIcon(exercise.equipment),
-          size: 64,
-          color: Colors.blueGrey,
+        Container(
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: AppTheme.tealPrimary.withAlpha(15),
+            shape: BoxShape.circle,
+          ),
+          child: Icon(
+            _getEquipmentIcon(exercise.equipment),
+            size: 56,
+            color: AppTheme.tealPrimary,
+          ),
         ),
         const SizedBox(height: 16),
         Text(
           exercise.name,
-          style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
+          style: const TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: 8),
-        Text(
-          'تجهیزات: ${exercise.equipment}',
-          style: TextStyle(fontSize: 16, color: Colors.grey.shade600),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+          decoration: BoxDecoration(
+            color: Colors.grey.shade200,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Text(
+            exercise.equipment,
+            style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
+          ),
         ),
-        const SizedBox(height: 32),
+        const SizedBox(height: 24),
         _buildProgressIndicator(state),
-        const SizedBox(height: 32),
+        const SizedBox(height: 24),
         if (exercise.isTimeBased)
           _buildTimerSection(state, provider)
         else
-          _buildRepsSection(provider),
+          _buildRepsSection(state, provider),
       ],
     );
   }
@@ -386,33 +470,63 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
     );
   }
 
-  Widget _buildRepsSection(ActiveWorkoutNotifier provider) {
-    final exercise = ref.read(activeWorkoutNotifierProvider).currentExercise;
+  Widget _buildRepsSection(
+    ActiveWorkoutState state,
+    ActiveWorkoutNotifier provider,
+  ) {
+    final exercise = state.currentExercise;
     if (exercise == null) return const SizedBox.shrink();
-
-    final tts = ref.read(ttsProvider.notifier);
 
     return Column(
       children: [
-        Text(
-          '${exercise.repsOrDuration}',
-          style: const TextStyle(fontSize: 72, fontWeight: FontWeight.w200),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 20),
+          decoration: BoxDecoration(
+            color: AppTheme.tealPrimary.withAlpha(25),
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Column(
+            children: [
+              Text(
+                '${exercise.repsOrDuration}',
+                style: TextStyle(
+                  fontSize: 72,
+                  fontWeight: FontWeight.w200,
+                  color: AppTheme.tealPrimary,
+                ),
+              ),
+              Text(
+                exercise.isTimeBased ? 'ثانیه' : 'تکرار',
+                style: TextStyle(fontSize: 20, color: AppTheme.tealDark),
+              ),
+            ],
+          ),
         ),
-        Text(
-          'تکرار',
-          style: TextStyle(fontSize: 20, color: Colors.grey.shade600),
-        ),
-        const SizedBox(height: 24),
-        ElevatedButton.icon(
-          onPressed: () {
-            final state = ref.read(activeWorkoutNotifierProvider);
-            tts.announceSetComplete(state.currentSet, exercise.sets);
-            provider.finishSet();
-          },
-          icon: const Icon(Icons.check),
-          label: const Text('پایان ست'),
-          style: ElevatedButton.styleFrom(
-            padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 14),
+        const SizedBox(height: 32),
+        SizedBox(
+          width: double.infinity,
+          height: 56,
+          child: ElevatedButton.icon(
+            onPressed: () {
+              final ttsEnabled = ref.read(ttsProvider);
+              if (ttsEnabled) {
+                ref
+                    .read(ttsProvider.notifier)
+                    .announceSetComplete(state.currentSet, exercise.sets);
+              }
+              provider.finishSet();
+            },
+            icon: const Icon(Icons.check_circle, size: 28),
+            label: const Text(
+              'پایان ست',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.tealPrimary,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+            ),
           ),
         ),
       ],
