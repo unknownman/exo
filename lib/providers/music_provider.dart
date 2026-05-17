@@ -1,8 +1,8 @@
 import 'dart:io';
 import 'package:file_picker/file_picker.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'music_provider.g.dart';
@@ -56,8 +56,8 @@ class MusicProvider extends _$MusicProvider {
 
   Future<void> _loadSavedTrack() async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final path = prefs.getString(_savedTrackKey);
+      final box = await Hive.openBox('app_data');
+      final path = box.get(_savedTrackKey) as String?;
       if (path != null && path.isNotEmpty) {
         state = state.copyWith(savedTrackPath: path);
       }
@@ -65,13 +65,13 @@ class MusicProvider extends _$MusicProvider {
   }
 
   Future<void> _saveTrackPath(String path) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_savedTrackKey, path);
+    final box = await Hive.openBox('app_data');
+    await box.put(_savedTrackKey, path);
   }
 
   Future<void> _removeTrackPath() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove(_savedTrackKey);
+    final box = await Hive.openBox('app_data');
+    await box.delete(_savedTrackKey);
   }
 
   Future<void> pickBackgroundMusic() async {
@@ -112,8 +112,8 @@ class MusicProvider extends _$MusicProvider {
   Future<void> playSavedTrack() async {
     String? path = state.savedTrackPath;
     if (path == null) {
-      final prefs = await SharedPreferences.getInstance();
-      path = prefs.getString(_savedTrackKey);
+      final box = await Hive.openBox('app_data');
+      path = box.get(_savedTrackKey) as String?;
       if (path == null || path.isEmpty) return;
       state = state.copyWith(savedTrackPath: path);
     }

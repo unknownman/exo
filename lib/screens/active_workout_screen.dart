@@ -22,6 +22,7 @@ class ActiveWorkoutScreen extends ConsumerStatefulWidget {
 class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
   bool _initialized = false;
   bool _showDescription = false;
+  bool _isRestOpen = false;
 
   @override
   void didChangeDependencies() {
@@ -50,14 +51,16 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
       activeWorkoutNotifierProvider.select((s) => s.isResting),
       (_, isResting) {
         if (isResting) {
+          _isRestOpen = true;
           Navigator.of(context).push(
             MaterialPageRoute(
               builder: (_) => const RestScreen(),
               fullscreenDialog: true,
             ),
           );
-        } else {
-          Navigator.of(context).popUntil((route) => route.isFirst);
+        } else if (_isRestOpen) {
+          _isRestOpen = false;
+          Navigator.of(context).pop();
         }
       },
     );
@@ -96,30 +99,27 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
   }
 
   Widget _buildErrorView(String message) {
-    return Directionality(
-      textDirection: TextDirection.rtl,
-      child: Scaffold(
-        appBar: AppBar(title: const Text('خطا')),
-        body: Center(
-          child: Padding(
-            padding: const EdgeInsets.all(32),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Icon(Icons.error_outline, size: 64, color: Colors.red),
-                const SizedBox(height: 16),
-                Text(
-                  message,
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(fontSize: 18),
-                ),
-                const SizedBox(height: 24),
-                ElevatedButton(
-                  onPressed: () => Navigator.of(context).pop(),
-                  child: const Text('بازگشت'),
-                ),
-              ],
-            ),
+    return Scaffold(
+      appBar: AppBar(title: const Text('خطا')),
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(32),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.error_outline, size: 64, color: Colors.red),
+              const SizedBox(height: 16),
+              Text(
+                message,
+                textAlign: TextAlign.center,
+                style: const TextStyle(fontSize: 18),
+              ),
+              const SizedBox(height: 24),
+              ElevatedButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('بازگشت'),
+              ),
+            ],
           ),
         ),
       ),
@@ -129,51 +129,48 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
   Widget _buildDoneView(String dayName) {
     final provider = ref.read(activeWorkoutNotifierProvider.notifier);
 
-    return Directionality(
-      textDirection: TextDirection.rtl,
-      child: Scaffold(
-        appBar: AppBar(title: Text(dayName)),
-        body: Center(
-          child: Padding(
-            padding: const EdgeInsets.all(32),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Icon(Icons.celebration, size: 80, color: Colors.green),
-                const SizedBox(height: 24),
-                const Text(
-                  'آفرین! تمرین با موفقیت انجام شد',
-                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'تمرین $dayName ثبت شد',
-                  style: TextStyle(fontSize: 16, color: Colors.grey.shade600),
-                ),
-                const SizedBox(height: 48),
-                ElevatedButton.icon(
-                  onPressed: () async {
-                    final dayId = ref.read(activeWorkoutNotifierProvider).dayId;
-                    final navigator = Navigator.of(context);
-                    if (dayId != null) {
-                      await ref
-                          .read(workoutNotifierProvider.notifier)
-                          .completeDay(dayId);
-                    }
-                    provider.finishWorkout();
-                    navigator.popUntil((route) => route.isFirst);
-                  },
-                  icon: const Icon(Icons.check),
-                  label: const Text('ثبت و بازگشت'),
-                  style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 32,
-                      vertical: 16,
-                    ),
+    return Scaffold(
+      appBar: AppBar(title: Text(dayName)),
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(32),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.celebration, size: 80, color: Colors.green),
+              const SizedBox(height: 24),
+              const Text(
+                'آفرین! تمرین با موفقیت انجام شد',
+                style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'تمرین $dayName ثبت شد',
+                style: TextStyle(fontSize: 16, color: Colors.grey.shade600),
+              ),
+              const SizedBox(height: 48),
+              ElevatedButton.icon(
+                onPressed: () async {
+                  final dayId = ref.read(activeWorkoutNotifierProvider).dayId;
+                  final navigator = Navigator.of(context);
+                  if (dayId != null) {
+                    await ref
+                        .read(workoutNotifierProvider.notifier)
+                        .completeDay(dayId);
+                  }
+                  provider.finishWorkout();
+                  navigator.popUntil((route) => route.isFirst);
+                },
+                icon: const Icon(Icons.check),
+                label: const Text('ثبت و بازگشت'),
+                style: ElevatedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 32,
+                    vertical: 16,
                   ),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),
@@ -187,28 +184,25 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
 
     if (exercise == null) return const SizedBox.shrink();
 
-    return Directionality(
-      textDirection: TextDirection.rtl,
-      child: Scaffold(
-        appBar: AppBar(
-          title: Text(dayName),
-          leading: IconButton(
-            icon: const Icon(Icons.close),
-            onPressed: () => _showExitDialog(provider),
-          ),
-          actions: const [TTSToggleButton()],
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(dayName),
+        leading: IconButton(
+          icon: const Icon(Icons.close),
+          onPressed: () => _showExitDialog(provider),
         ),
-        body: Column(
-          children: [
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(24),
-                child: _buildExerciseCard(activeState, provider, exercise),
-              ),
+        actions: const [TTSToggleButton()],
+      ),
+      body: Column(
+        children: [
+          Expanded(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(24),
+              child: _buildExerciseCard(activeState, provider, exercise),
             ),
-            _buildBottomControls(activeState, provider),
-          ],
-        ),
+          ),
+          _buildBottomControls(activeState, provider),
+        ],
       ),
     );
   }

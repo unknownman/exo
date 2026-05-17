@@ -49,89 +49,9 @@ class DashboardScreen extends ConsumerWidget {
           return _buildNoPlanView(context);
         }
 
-        final currentDay = state.currentDay;
-
         return Scaffold(
           appBar: AppBar(
-            title: Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 12,
-                vertical: 4,
-              ),
-              decoration: BoxDecoration(
-                color: Colors.white.withAlpha(25),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: DropdownButtonHideUnderline(
-                child: DropdownButton<String>(
-                  value: state.activePlanId,
-                  isExpanded: true,
-                  icon: const Icon(Icons.arrow_drop_down,
-                      color: Colors.white),
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                  ),
-                  items: [
-                    ...state.plans.map((p) {
-                      return DropdownMenuItem(
-                        value: p.id,
-                        child: Row(
-                          children: [
-                            Icon(
-                              Icons.fitness_center,
-                              size: 18,
-                              color: AppTheme.tealLight,
-                            ),
-                            const SizedBox(width: 8),
-                            Expanded(child: Text(p.name)),
-                          ],
-                        ),
-                      );
-                    }),
-                    const DropdownMenuItem(
-                      enabled: false,
-                      child: Divider(height: 1, thickness: 1),
-                    ),
-                    DropdownMenuItem(
-                      value: _addNewPlanValue,
-                      child: Row(
-                        children: [
-                          Icon(
-                            Icons.add_circle_outline,
-                            size: 18,
-                            color: AppTheme.tealPrimary,
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            'ایجاد برنامه جدید',
-                            style: TextStyle(
-                              color: AppTheme.tealPrimary,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                  onChanged: (value) {
-                    if (value == null) return;
-                    if (value == _addNewPlanValue) {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (_) => const CreatePlanScreen(),
-                        ),
-                      );
-                    } else {
-                      ref
-                          .read(workoutNotifierProvider.notifier)
-                          .switchActivePlan(value);
-                    }
-                  },
-                ),
-              ),
-            ),
+            title: _PlanSelector(plans: state.plans, activePlanId: state.activePlanId),
             actions: const [TTSToggleButton()],
           ),
           floatingActionButton: FloatingActionButton(
@@ -142,13 +62,10 @@ class DashboardScreen extends ConsumerWidget {
           ),
           body: Column(
             children: [
-              _buildDayNavigation(context, ref, state, plan),
-              if (currentDay != null) _buildStartButton(context, currentDay),
-              Expanded(
-                child: currentDay != null
-                    ? _buildExerciseList(currentDay)
-                    : const SizedBox.shrink(),
-              ),
+              const _DayNavigationBar(),
+              const _ProgressBar(),
+              const _StartWorkoutButton(),
+              const Expanded(child: _ExerciseListView()),
             ],
           ),
         );
@@ -179,17 +96,112 @@ class DashboardScreen extends ConsumerWidget {
       ),
     );
   }
+}
 
-  Widget _buildDayNavigation(
-    BuildContext context,
-    WidgetRef ref,
-    WorkoutPlanState state,
-    WorkoutPlan plan,
-  ) {
-    final currentIndex = state.currentDayIndex;
-    final totalDays = plan.days.length;
-    final currentDay = state.currentDay;
-    final isCompleted = currentDay?.isCompleted ?? false;
+class _PlanSelector extends ConsumerWidget {
+  final List<WorkoutPlan> plans;
+  final String? activePlanId;
+
+  const _PlanSelector({required this.plans, required this.activePlanId});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      decoration: BoxDecoration(
+        color: Colors.white.withAlpha(25),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<String>(
+          value: activePlanId,
+          isExpanded: true,
+          icon: const Icon(Icons.arrow_drop_down, color: Colors.white),
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 16,
+            fontWeight: FontWeight.w500,
+          ),
+          items: [
+            ...plans.map((p) {
+              return DropdownMenuItem(
+                value: p.id,
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.fitness_center,
+                      size: 18,
+                      color: AppTheme.tealLight,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(child: Text(p.name)),
+                  ],
+                ),
+              );
+            }),
+            const DropdownMenuItem(
+              enabled: false,
+              child: Divider(height: 1, thickness: 1),
+            ),
+            DropdownMenuItem(
+              value: _addNewPlanValue,
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.add_circle_outline,
+                    size: 18,
+                    color: AppTheme.tealPrimary,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    'ایجاد برنامه جدید',
+                    style: TextStyle(
+                      color: AppTheme.tealPrimary,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+          onChanged: (value) {
+            if (value == null) return;
+            if (value == _addNewPlanValue) {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => const CreatePlanScreen(),
+                ),
+              );
+            } else {
+              ref
+                  .read(workoutNotifierProvider.notifier)
+                  .switchActivePlan(value);
+            }
+          },
+        ),
+      ),
+    );
+  }
+}
+
+class _DayNavigationBar extends ConsumerWidget {
+  const _DayNavigationBar();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final currentIndex = ref.watch(
+      workoutNotifierProvider.select((s) => s.valueOrNull?.currentDayIndex ?? 0),
+    );
+    final days = ref.watch(
+      workoutNotifierProvider.select((s) => s.valueOrNull?.plan?.days ?? <WorkoutDay>[]),
+    );
+    final isCompleted = days.isNotEmpty && currentIndex < days.length
+        ? days[currentIndex].isCompleted
+        : false;
+    final totalDays = days.length;
+    final currentDayName = currentIndex < days.length && days.isNotEmpty
+        ? days[currentIndex].name
+        : '';
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
@@ -223,10 +235,7 @@ class DashboardScreen extends ConsumerWidget {
           const SizedBox(width: 10),
           Flexible(
             child: Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 14,
-                vertical: 10,
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
               decoration: BoxDecoration(
                 color: AppTheme.tealPrimary,
                 borderRadius: BorderRadius.circular(16),
@@ -253,7 +262,7 @@ class DashboardScreen extends ConsumerWidget {
                   const SizedBox(width: 8),
                   Flexible(
                     child: Text(
-                      currentDay?.name ?? '',
+                      currentDayName,
                       style: const TextStyle(
                         color: Colors.white,
                         fontWeight: FontWeight.bold,
@@ -293,9 +302,56 @@ class DashboardScreen extends ConsumerWidget {
       ),
     );
   }
+}
 
-  Widget _buildStartButton(BuildContext context, WorkoutDay day) {
-    final isCompleted = day.isCompleted;
+class _ProgressBar extends ConsumerWidget {
+  const _ProgressBar();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final completed = ref.watch(
+      workoutNotifierProvider.select((s) => s.valueOrNull?.completedDaysCount ?? 0),
+    );
+    final total = ref.watch(
+      workoutNotifierProvider.select((s) => s.valueOrNull?.totalDays ?? 0),
+    );
+    if (total == 0) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      child: Row(
+        children: [
+          Expanded(
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(4),
+              child: LinearProgressIndicator(
+                value: completed / total,
+                minHeight: 6,
+                backgroundColor: Colors.grey.shade200,
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Text(
+            '$completed/$total',
+            style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _StartWorkoutButton extends ConsumerWidget {
+  const _StartWorkoutButton();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final currentDay = ref.watch(
+      workoutNotifierProvider.select((s) => s.valueOrNull?.currentDay),
+    );
+    if (currentDay == null) return const SizedBox.shrink();
+
+    final isCompleted = currentDay.isCompleted;
 
     return Container(
       width: double.infinity,
@@ -305,7 +361,7 @@ class DashboardScreen extends ConsumerWidget {
             ? null
             : () => Navigator.of(context).push(
                   MaterialPageRoute(
-                    builder: (_) => ActiveWorkoutScreen(dayId: day.id),
+                    builder: (_) => ActiveWorkoutScreen(dayId: currentDay.id),
                   ),
                 ),
         icon: Icon(isCompleted ? Icons.check_circle : Icons.play_arrow),
@@ -327,9 +383,17 @@ class DashboardScreen extends ConsumerWidget {
       ),
     );
   }
+}
 
-  Widget _buildExerciseList(WorkoutDay day) {
-    if (day.exercises.isEmpty) {
+class _ExerciseListView extends ConsumerWidget {
+  const _ExerciseListView();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final currentDay = ref.watch(
+      workoutNotifierProvider.select((s) => s.valueOrNull?.currentDay),
+    );
+    if (currentDay == null || currentDay.exercises.isEmpty) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -338,18 +402,12 @@ class DashboardScreen extends ConsumerWidget {
             const SizedBox(height: 12),
             Text(
               'هیچ تمرینی برای این روز ثبت نشده',
-              style: TextStyle(
-                color: Colors.grey.shade500,
-                fontSize: 15,
-              ),
+              style: TextStyle(color: Colors.grey.shade500, fontSize: 15),
             ),
             const SizedBox(height: 8),
             Text(
               'با دکمه + تمرین اضافه کنید',
-              style: TextStyle(
-                color: Colors.grey.shade400,
-                fontSize: 13,
-              ),
+              style: TextStyle(color: Colors.grey.shade400, fontSize: 13),
             ),
           ],
         ),
@@ -358,15 +416,14 @@ class DashboardScreen extends ConsumerWidget {
 
     return ListView.separated(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-      itemCount: day.exercises.length,
+      itemCount: currentDay.exercises.length,
       separatorBuilder: (context, index) => const Divider(height: 1),
       itemBuilder: (context, index) {
-        final exercise = day.exercises[index];
+        final exercise = currentDay.exercises[index];
         return _ExerciseTile(exercise: exercise);
       },
     );
   }
-
 }
 
 class _ExerciseTile extends StatelessWidget {
@@ -415,10 +472,7 @@ class _ExerciseTile extends StatelessWidget {
           const SizedBox(width: 8),
           Text(
             repsText,
-            style: TextStyle(
-              fontSize: 13,
-              color: Colors.grey.shade600,
-            ),
+            style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
           ),
           const SizedBox(width: 8),
           Container(

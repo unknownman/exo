@@ -19,6 +19,28 @@ class WorkoutLog {
     this.hasMedia = false,
   });
 
+  WorkoutLog copyWith({
+    String? id,
+    String? dayId,
+    String? dayName,
+    DateTime? completedAt,
+    int? exerciseCount,
+    int? totalSets,
+    int? totalDurationMinutes,
+    bool? hasMedia,
+  }) {
+    return WorkoutLog(
+      id: id ?? this.id,
+      dayId: dayId ?? this.dayId,
+      dayName: dayName ?? this.dayName,
+      completedAt: completedAt ?? this.completedAt,
+      exerciseCount: exerciseCount ?? this.exerciseCount,
+      totalSets: totalSets ?? this.totalSets,
+      totalDurationMinutes: totalDurationMinutes ?? this.totalDurationMinutes,
+      hasMedia: hasMedia ?? this.hasMedia,
+    );
+  }
+
   Map<String, dynamic> toMap() {
     return {
       'id': id,

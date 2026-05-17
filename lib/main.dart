@@ -1,12 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 import 'package:exo/screens/shell_screen.dart';
 import 'package:exo/core/theme/app_theme.dart';
-
-final selectedTabProvider = StateProvider<int>((ref) => 0);
+import 'package:exo/core/hive/adapters.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await Hive.initFlutter();
+  Hive.registerAdapter(ExerciseMediaAdapter());
+  Hive.registerAdapter(ExerciseAdapter());
+  Hive.registerAdapter(WorkoutDayAdapter());
+  Hive.registerAdapter(WorkoutPlanAdapter());
+  Hive.registerAdapter(WorkoutLogAdapter());
   runApp(const ProviderScope(child: ExoApp()));
 }
 

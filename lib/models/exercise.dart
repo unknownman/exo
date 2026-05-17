@@ -79,13 +79,7 @@ class Exercise {
       equipment: map['equipment'] as String,
       media: map['media'] != null
           ? ExerciseMedia.fromMap(map['media'] as Map<String, dynamic>)
-          : map['imagePath'] != null
-              ? ExerciseMedia(
-                  type: ExerciseMediaType.image,
-                  source: map['imagePath'] as String,
-                  isLocal: false,
-                )
-              : const ExerciseMedia.empty(),
+          : const ExerciseMedia.empty(),
     );
   }
 

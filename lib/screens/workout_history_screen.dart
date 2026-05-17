@@ -12,30 +12,27 @@ class WorkoutHistoryScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final stateAsync = ref.watch(workoutNotifierProvider);
 
-    return Directionality(
-      textDirection: TextDirection.rtl,
-      child: Scaffold(
-        appBar: AppBar(title: const Text('تاریخچه تمرینات')),
-        body: stateAsync.when(
-          loading: () => const Center(child: CircularProgressIndicator()),
-          error: (e, _) => Center(child: Text('خطا: $e')),
-          data: (state) {
-            final logs = state.workoutLogs;
+    return Scaffold(
+      appBar: AppBar(title: const Text('تاریخچه تمرینات')),
+      body: stateAsync.when(
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (e, _) => Center(child: Text('خطا: $e')),
+        data: (state) {
+          final logs = state.workoutLogs;
 
-            if (logs.isEmpty) {
-              return _buildEmptyState(context, ref);
-            }
+          if (logs.isEmpty) {
+            return _buildEmptyState(context, ref);
+          }
 
-            return ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: logs.length,
-              itemBuilder: (context, index) {
-                final log = logs[index];
-                return _WorkoutLogCard(log: log);
-              },
-            );
-          },
-        ),
+          return ListView.builder(
+            padding: const EdgeInsets.all(16),
+            itemCount: logs.length,
+            itemBuilder: (context, index) {
+              final log = logs[index];
+              return _WorkoutLogCard(log: log);
+            },
+          );
+        },
       ),
     );
   }
@@ -48,54 +45,51 @@ class WorkoutHistoryScreen extends ConsumerWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(
-              width: 100,
-              height: 100,
+              width: 72,
+              height: 72,
               decoration: BoxDecoration(
-                color: AppTheme.tealPrimary.withAlpha(20),
+                color: AppTheme.tealPrimary.withAlpha(15),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(
+              child: Icon(
                 Icons.fitness_center,
-                size: 48,
-                color: AppTheme.tealPrimary,
+                size: 32,
+                color: AppTheme.tealPrimary.withAlpha(150),
               ),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 20),
             const Text(
               'هنوز تمرینی ثبت نشده',
               style: TextStyle(
-                fontSize: 20,
+                fontSize: 18,
                 fontWeight: FontWeight.bold,
                 color: Colors.black87,
               ),
             ),
             const SizedBox(height: 8),
             Text(
-              'هر تمرین که انجام بدی، اینجا\nثبت می‌شه تا پیشرفتت رو ببینی.',
+              'پس از اتمام اولین تمرین، تاریخچه‌ات اینجا نمایش داده می‌شود.',
               textAlign: TextAlign.center,
               style: TextStyle(
-                fontSize: 15,
-                color: Colors.grey.shade600,
+                fontSize: 14,
+                color: Colors.grey.shade500,
                 height: 1.5,
               ),
             ),
-            const SizedBox(height: 32),
+            const SizedBox(height: 28),
             ElevatedButton.icon(
               onPressed: () {
                 ref.read(selectedTabProvider.notifier).state = 0;
               },
-              icon: const Icon(Icons.play_arrow),
-              label: const Text(
-                'شروع اولین تمرین',
-                style: TextStyle(fontSize: 16),
-              ),
+              icon: const Icon(Icons.play_arrow, size: 20),
+              label: const Text('شروع اولین تمرین'),
               style: ElevatedButton.styleFrom(
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 32,
-                  vertical: 16,
+                  horizontal: 28,
+                  vertical: 14,
                 ),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(14),
                 ),
               ),
             ),

@@ -242,6 +242,7 @@ class _AddExerciseScreenState extends ConsumerState<AddExerciseScreen> {
         } else {
           effectiveDayId = unlockedDays.first.id;
         }
+        _selectedDayId ??= effectiveDayId;
 
         final dayOptions = unlockedDays
             .map(
@@ -252,10 +253,8 @@ class _AddExerciseScreenState extends ConsumerState<AddExerciseScreen> {
             )
             .toList();
 
-        return Directionality(
-          textDirection: TextDirection.rtl,
-          child: Scaffold(
-            appBar: AppBar(title: const Text('افزودن تمرین')),
+        return Scaffold(
+          appBar: AppBar(title: const Text('افزودن تمرین')),
             body: SingleChildScrollView(
               padding: const EdgeInsets.all(16),
               child: Form(
@@ -392,7 +391,6 @@ class _AddExerciseScreenState extends ConsumerState<AddExerciseScreen> {
                       child: const Text('ثبت تمرین'),
                     ),
                   ],
-                ),
               ),
             ),
           ),

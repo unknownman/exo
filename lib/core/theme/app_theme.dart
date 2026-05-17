@@ -7,21 +7,20 @@ class AppTheme {
   static const Color cyanAccent = Color(0xFF00E5FF);
   static const Color darkSurface = Color(0xFF121212);
   static const Color darkCard = Color(0xFF1E1E1E);
+  static const Color lightScaffoldBg = Color(0xFFF5F7FA);
 
-  static const String fontFamily = 'Vazir';
+  static const String fontFamily = 'Vazirmatn';
 
   static ThemeData get lightTheme {
+    final colorScheme = ColorScheme.fromSeed(
+      seedColor: tealPrimary,
+      brightness: Brightness.light,
+    );
     return ThemeData(
       useMaterial3: true,
+      colorScheme: colorScheme,
       fontFamily: fontFamily,
-      colorScheme: ColorScheme.fromSeed(
-        seedColor: tealPrimary,
-        brightness: Brightness.light,
-        primary: tealPrimary,
-        secondary: tealLight,
-        tertiary: cyanAccent,
-        surface: Colors.white,
-      ),
+      scaffoldBackgroundColor: lightScaffoldBg,
       appBarTheme: AppBarTheme(
         centerTitle: true,
         backgroundColor: tealPrimary,
@@ -39,7 +38,10 @@ class AppTheme {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
-          textStyle: const TextStyle(fontFamily: fontFamily),
+          textStyle: const TextStyle(
+            fontFamily: fontFamily,
+            fontWeight: FontWeight.w600,
+          ),
           backgroundColor: tealPrimary,
           foregroundColor: Colors.white,
         ),
@@ -50,15 +52,19 @@ class AppTheme {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
-          textStyle: const TextStyle(fontFamily: fontFamily),
+          textStyle: const TextStyle(
+            fontFamily: fontFamily,
+            fontWeight: FontWeight.w600,
+          ),
           side: const BorderSide(color: tealPrimary),
         ),
       ),
       cardTheme: CardThemeData(
-        elevation: 0.5,
-        shadowColor: Colors.black.withAlpha(25),
+        elevation: 2,
+        shadowColor: Colors.black.withAlpha(20),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         margin: const EdgeInsets.only(bottom: 12),
+        color: Colors.white,
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
@@ -79,11 +85,21 @@ class AppTheme {
           horizontal: 16,
           vertical: 12,
         ),
-        labelStyle: const TextStyle(fontFamily: fontFamily),
+        labelStyle: TextStyle(
+          fontFamily: fontFamily,
+          fontWeight: FontWeight.w500,
+        ),
       ),
-      bottomNavigationBarTheme: const BottomNavigationBarThemeData(
-        selectedLabelStyle: TextStyle(fontFamily: fontFamily, fontSize: 12),
-        unselectedLabelStyle: TextStyle(fontFamily: fontFamily, fontSize: 12),
+      bottomNavigationBarTheme: BottomNavigationBarThemeData(
+        selectedLabelStyle: TextStyle(
+          fontFamily: fontFamily,
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+        ),
+        unselectedLabelStyle: TextStyle(
+          fontFamily: fontFamily,
+          fontSize: 12,
+        ),
         selectedItemColor: tealPrimary,
         unselectedItemColor: Colors.grey,
         type: BottomNavigationBarType.fixed,
@@ -100,18 +116,15 @@ class AppTheme {
   }
 
   static ThemeData get darkTheme {
+    final colorScheme = ColorScheme.fromSeed(
+      seedColor: tealPrimary,
+      brightness: Brightness.dark,
+    );
     return ThemeData(
       useMaterial3: true,
+      colorScheme: colorScheme,
       fontFamily: fontFamily,
       brightness: Brightness.dark,
-      colorScheme: ColorScheme.fromSeed(
-        seedColor: tealPrimary,
-        brightness: Brightness.dark,
-        primary: tealPrimary,
-        secondary: tealLight,
-        tertiary: cyanAccent,
-        surface: darkSurface,
-      ),
       scaffoldBackgroundColor: darkSurface,
       appBarTheme: AppBarTheme(
         centerTitle: true,
@@ -130,7 +143,10 @@ class AppTheme {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
-          textStyle: const TextStyle(fontFamily: fontFamily),
+          textStyle: const TextStyle(
+            fontFamily: fontFamily,
+            fontWeight: FontWeight.w600,
+          ),
           backgroundColor: tealPrimary,
           foregroundColor: Colors.white,
         ),
@@ -141,13 +157,16 @@ class AppTheme {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
-          textStyle: const TextStyle(fontFamily: fontFamily),
+          textStyle: const TextStyle(
+            fontFamily: fontFamily,
+            fontWeight: FontWeight.w600,
+          ),
           side: const BorderSide(color: tealPrimary),
         ),
       ),
       cardTheme: CardThemeData(
-        elevation: 0.5,
-        shadowColor: Colors.black.withAlpha(25),
+        elevation: 2,
+        shadowColor: Colors.black.withAlpha(40),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         margin: const EdgeInsets.only(bottom: 12),
         color: darkCard,
@@ -171,11 +190,21 @@ class AppTheme {
           horizontal: 16,
           vertical: 12,
         ),
-        labelStyle: const TextStyle(fontFamily: fontFamily),
+        labelStyle: TextStyle(
+          fontFamily: fontFamily,
+          fontWeight: FontWeight.w500,
+        ),
       ),
-      bottomNavigationBarTheme: const BottomNavigationBarThemeData(
-        selectedLabelStyle: TextStyle(fontFamily: fontFamily, fontSize: 12),
-        unselectedLabelStyle: TextStyle(fontFamily: fontFamily, fontSize: 12),
+      bottomNavigationBarTheme: BottomNavigationBarThemeData(
+        selectedLabelStyle: TextStyle(
+          fontFamily: fontFamily,
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+        ),
+        unselectedLabelStyle: TextStyle(
+          fontFamily: fontFamily,
+          fontSize: 12,
+        ),
         selectedItemColor: tealPrimary,
         unselectedItemColor: Colors.grey,
         type: BottomNavigationBarType.fixed,

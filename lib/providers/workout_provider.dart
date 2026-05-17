@@ -1,6 +1,5 @@
-import 'dart:convert';
+import 'package:hive_flutter/hive_flutter.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import '../models/exercise.dart';
 import '../models/exercise_media.dart';
 import '../models/workout_plan.dart';
@@ -17,61 +16,54 @@ class WorkoutNotifier extends _$WorkoutNotifier {
 
   Future<WorkoutPlanState> _loadInitialData() async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final plansJson = prefs.getString('workout_plans');
-      final savedActivePlanId = prefs.getString('active_plan_id');
-      final savedDayIndex = prefs.getInt('current_day_index');
-      final logsJson = prefs.getString('workout_logs');
+      final box = await Hive.openBox('app_data');
+      final plans = (box.get('workout_plans', defaultValue: <WorkoutPlan>[])
+              as List)
+          .cast<WorkoutPlan>();
+      final savedActivePlanId = box.get('active_plan_id') as String?;
+      final savedDayIndex = box.get('current_day_index') as int?;
+      final workoutLogs = (box.get('workout_logs', defaultValue: <WorkoutLog>[])
+              as List)
+          .cast<WorkoutLog>();
 
-      List<WorkoutPlan> plans = [];
+      List<WorkoutPlan> finalPlans = List.from(plans);
       String? activePlanId;
 
-      if (plansJson != null && plansJson.isNotEmpty) {
-        final List<dynamic> decoded = jsonDecode(plansJson) as List<dynamic>;
-        plans = decoded
-            .map((p) => WorkoutPlan.fromMap(p as Map<String, dynamic>))
-            .toList();
-      }
-
-      if (plans.isEmpty) {
+      if (finalPlans.isEmpty) {
         final defaultPlan = _createDefaultPlan();
-        plans = [defaultPlan];
+        finalPlans = [defaultPlan];
         activePlanId = defaultPlan.id;
       } else {
-        activePlanId = savedActivePlanId ?? plans.first.id;
+        activePlanId = savedActivePlanId ?? finalPlans.first.id;
       }
 
-      final activePlan = plans.firstWhere(
+      final activePlan = finalPlans.firstWhere(
         (p) => p.id == activePlanId,
-        orElse: () => plans.first,
+        orElse: () => finalPlans.first,
       );
 
       final restoredDayIndex = savedDayIndex ?? 0;
 
-      List<WorkoutLog> workoutLogs = [];
-      if (logsJson != null && logsJson.isNotEmpty) {
-        final List<dynamic> decodedLogs = jsonDecode(logsJson) as List<dynamic>;
-        workoutLogs = decodedLogs
-            .map((l) => WorkoutLog.fromMap(l as Map<String, dynamic>))
-            .toList();
-      }
-
       return WorkoutPlanState(
-        plans: plans,
+        plans: finalPlans,
         activePlanId: activePlanId,
         currentDayIndex: restoredDayIndex.clamp(0, activePlan.days.length - 1),
         isLoading: false,
         errorMessage: null,
-        workoutLogs: workoutLogs,
+        workoutLogs: List.from(workoutLogs),
       );
     } catch (e) {
+      try {
+        final box = await Hive.openBox('app_data');
+        await box.clear();
+      } catch (_) {}
       final defaultPlan = _createDefaultPlan();
       return WorkoutPlanState(
         plans: [defaultPlan],
         activePlanId: defaultPlan.id,
         currentDayIndex: 0,
         isLoading: false,
-        errorMessage: 'خطا در بارگذاری داده‌ها',
+        errorMessage: null,
       );
     }
   }
@@ -334,16 +326,15 @@ class WorkoutNotifier extends _$WorkoutNotifier {
   }
 
   Future<void> _saveData() async {
-    final prefs = await SharedPreferences.getInstance();
     final currentState = state.valueOrNull;
     if (currentState == null || currentState.plans.isEmpty) return;
 
-    final plansJson = currentState.plans.map((p) => p.toMap()).toList();
-    await prefs.setString('workout_plans', jsonEncode(plansJson));
+    final box = await Hive.openBox('app_data');
+    await box.put('workout_plans', currentState.plans);
     if (currentState.activePlanId != null) {
-      await prefs.setString('active_plan_id', currentState.activePlanId!);
+      await box.put('active_plan_id', currentState.activePlanId);
     }
-    await prefs.setInt('current_day_index', currentState.currentDayIndex);
+    await box.put('current_day_index', currentState.currentDayIndex);
   }
 
   Future<void> _updateCurrentPlan(WorkoutPlan updatedPlan) async {
@@ -429,10 +420,11 @@ class WorkoutNotifier extends _$WorkoutNotifier {
     );
 
     await _updateCurrentPlan(updatedPlan);
-    state = AsyncData(
-      currentState.copyWith(currentDayIndex: nextDayIndex),
-    );
-    await _saveData();
+    final fresh = state.valueOrNull;
+    if (fresh != null) {
+      state = AsyncData(fresh.copyWith(currentDayIndex: nextDayIndex));
+      await _saveData();
+    }
   }
 
   Future<void> setCurrentDayByIndex(int index) async {
@@ -480,9 +472,9 @@ class WorkoutNotifier extends _$WorkoutNotifier {
   }
 
   Future<void> resetEverything() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove('workout_plans');
-    await prefs.remove('active_plan_id');
+    final box = await Hive.openBox('app_data');
+    await box.delete('workout_plans');
+    await box.delete('active_plan_id');
     state = AsyncData(_createDefaultState());
     await _saveData();
   }
@@ -583,26 +575,21 @@ class WorkoutNotifier extends _$WorkoutNotifier {
 
   Future<List<WorkoutLog>> getWorkoutLogs() async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final logsJson = prefs.getString('workout_logs');
-      if (logsJson != null && logsJson.isNotEmpty) {
-        final List<dynamic> decoded = jsonDecode(logsJson) as List<dynamic>;
-        return decoded
-            .map((e) => WorkoutLog.fromMap(e as Map<String, dynamic>))
-            .toList();
-      }
+      final box = await Hive.openBox('app_data');
+      final logs =
+          (box.get('workout_logs', defaultValue: <WorkoutLog>[]) as List)
+              .cast<WorkoutLog>();
+      return List.from(logs);
     } catch (e) {
-      // Ignore errors
+      return [];
     }
-    return [];
   }
 
   Future<void> _saveLogs() async {
     final currentState = state.valueOrNull;
     if (currentState == null) return;
-    final prefs = await SharedPreferences.getInstance();
-    final encoded = currentState.workoutLogs.map((l) => l.toMap()).toList();
-    await prefs.setString('workout_logs', jsonEncode(encoded));
+    final box = await Hive.openBox('app_data');
+    await box.put('workout_logs', currentState.workoutLogs);
   }
 
   Future<void> createPlan(String name, {List<String>? dayNames}) async {
