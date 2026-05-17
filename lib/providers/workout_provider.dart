@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../models/exercise.dart';
@@ -7,7 +8,7 @@ import '../models/workout_log.dart';
 
 part 'workout_provider.g.dart';
 
-@riverpod
+@Riverpod(keepAlive: true)
 class WorkoutNotifier extends _$WorkoutNotifier {
   @override
   Future<WorkoutPlanState> build() async {
@@ -26,7 +27,7 @@ class WorkoutNotifier extends _$WorkoutNotifier {
               as List)
           .cast<WorkoutLog>();
 
-      List<WorkoutPlan> finalPlans = List.from(plans);
+      List<WorkoutPlan> finalPlans = [...plans];
       String? activePlanId;
 
       if (finalPlans.isEmpty) {
@@ -50,12 +51,18 @@ class WorkoutNotifier extends _$WorkoutNotifier {
         currentDayIndex: restoredDayIndex.clamp(0, activePlan.days.length - 1),
         isLoading: false,
         errorMessage: null,
-        workoutLogs: List.from(workoutLogs),
+        workoutLogs: [...workoutLogs],
       );
     } catch (e) {
+      // Recovery: do NOT wipe the database. Log and create defaults only if needed.
+      debugPrint('[ExoRecovery] _loadInitialData error: $e');
       try {
         final box = await Hive.openBox('app_data');
-        await box.clear();
+        final existingPlans = box.get('workout_plans');
+        if (existingPlans != null && existingPlans is List && existingPlans.isNotEmpty) {
+          // Data exists but failed to deserialize — keep box intact, use defaults in memory
+          debugPrint('[ExoRecovery] Hive data exists but failed to parse. Using in-memory defaults.');
+        }
       } catch (_) {}
       final defaultPlan = _createDefaultPlan();
       return WorkoutPlanState(
@@ -63,7 +70,7 @@ class WorkoutNotifier extends _$WorkoutNotifier {
         activePlanId: defaultPlan.id,
         currentDayIndex: 0,
         isLoading: false,
-        errorMessage: null,
+        errorMessage: 'خطا در بارگذاری داده‌ها. برنامه پیش‌فرض بارگذاری شد.',
       );
     }
   }
@@ -399,7 +406,8 @@ class WorkoutNotifier extends _$WorkoutNotifier {
     final day = currentState.plan!.days[dayIndex];
     if (day.isCompleted) return;
 
-    final updatedDays = List<WorkoutDay>.from(currentState.plan!.days);
+    // Build updated days list
+    final updatedDays = [...currentState.plan!.days];
     updatedDays[dayIndex] = day.copyWith(
       isCompleted: true,
       completedAt: DateTime.now(),
@@ -410,21 +418,42 @@ class WorkoutNotifier extends _$WorkoutNotifier {
       updatedAt: DateTime.now(),
     );
 
-    final nextDayIndex = (dayIndex + 1) % updatedDays.length;
+    // Determine next day: don't wrap to 0 if all days are done
+    final allCompleted = updatedDays.every((d) => d.isCompleted);
+    final nextDayIndex = allCompleted
+        ? dayIndex
+        : (dayIndex + 1) % updatedDays.length;
 
-    await logCompletedWorkout(
+    // Build log entry inline to avoid intermediate state mutations
+    final log = WorkoutLog(
+      id: 'log_${DateTime.now().millisecondsSinceEpoch}',
       dayId: day.id,
       dayName: day.name,
-      exercises: day.exercises,
-      durationMinutes: day.estimatedDurationMinutes,
+      completedAt: DateTime.now(),
+      exerciseCount: day.exercises.length,
+      totalSets: day.exercises.fold(0, (sum, e) => sum + e.sets),
+      totalDurationMinutes: day.estimatedDurationMinutes,
+      hasMedia: day.exercises.any(
+        (e) => e.media.type != ExerciseMediaType.none,
+      ),
     );
 
-    await _updateCurrentPlan(updatedPlan);
-    final fresh = state.valueOrNull;
-    if (fresh != null) {
-      state = AsyncData(fresh.copyWith(currentDayIndex: nextDayIndex));
-      await _saveData();
-    }
+    // Build updated plans list
+    final updatedPlans = currentState.plans.map((p) {
+      return p.id == updatedPlan.id ? updatedPlan : p;
+    }).toList();
+
+    // Single atomic state update
+    state = AsyncData(
+      currentState.copyWith(
+        plans: updatedPlans,
+        currentDayIndex: nextDayIndex,
+        workoutLogs: [log, ...currentState.workoutLogs],
+        errorMessage: null,
+      ),
+    );
+    await _saveData();
+    await _saveLogs();
   }
 
   Future<void> setCurrentDayByIndex(int index) async {
@@ -468,7 +497,12 @@ class WorkoutNotifier extends _$WorkoutNotifier {
     );
 
     await _updateCurrentPlan(updatedPlan);
-    state = AsyncData(currentState.copyWith(currentDayIndex: 0));
+    // Re-read fresh state after _updateCurrentPlan mutated it
+    final fresh = state.valueOrNull;
+    if (fresh != null) {
+      state = AsyncData(fresh.copyWith(currentDayIndex: 0));
+      await _saveData();
+    }
   }
 
   Future<void> resetEverything() async {
@@ -527,7 +561,12 @@ class WorkoutNotifier extends _$WorkoutNotifier {
     }
 
     await _updateCurrentPlan(updatedPlan);
-    state = AsyncData(currentState.copyWith(currentDayIndex: newCurrentIndex));
+    // Re-read fresh state after _updateCurrentPlan mutated it
+    final fresh = state.valueOrNull;
+    if (fresh != null) {
+      state = AsyncData(fresh.copyWith(currentDayIndex: newCurrentIndex));
+      await _saveData();
+    }
   }
 
   Future<void> updatePlanName(String name) async {

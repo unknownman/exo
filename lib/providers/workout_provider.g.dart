@@ -6,15 +6,12 @@ part of 'workout_provider.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$workoutNotifierHash() => r'8453574be5f5cdc60d8b6d82f3f8371231ef0668';
+String _$workoutNotifierHash() => r'e93bd5aa2f70bff1f03ea6d2941437b970f4e6b4';
 
 /// See also [WorkoutNotifier].
 @ProviderFor(WorkoutNotifier)
 final workoutNotifierProvider =
-    AutoDisposeAsyncNotifierProvider<
-      WorkoutNotifier,
-      WorkoutPlanState
-    >.internal(
+    AsyncNotifierProvider<WorkoutNotifier, WorkoutPlanState>.internal(
       WorkoutNotifier.new,
       name: r'workoutNotifierProvider',
       debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
@@ -24,6 +21,6 @@ final workoutNotifierProvider =
       allTransitiveDependencies: null,
     );
 
-typedef _$WorkoutNotifier = AutoDisposeAsyncNotifier<WorkoutPlanState>;
+typedef _$WorkoutNotifier = AsyncNotifier<WorkoutPlanState>;
 // ignore_for_file: type=lint
 // ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member, deprecated_member_use_from_same_package

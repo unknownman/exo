@@ -47,7 +47,10 @@ class ActiveWorkoutNotifier extends _$ActiveWorkoutNotifier {
       day.exercises.first.name,
     );
 
-    ref.read(musicProviderProvider.notifier).playSavedTrack();
+    // Attempt background music — don't block workout if it fails
+    try {
+      ref.read(musicProviderProvider.notifier).playSavedTrack();
+    } catch (_) {}
   }
 
   void toggleTimer() {

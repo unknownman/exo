@@ -106,6 +106,10 @@ class _PlanSelector extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // Safely resolve activePlanId: ensure it matches an existing plan
+    final validId = plans.any((p) => p.id == activePlanId) ? activePlanId : null;
+    final displayId = validId ?? (plans.isNotEmpty ? plans.first.id : null);
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
       decoration: BoxDecoration(
@@ -114,7 +118,7 @@ class _PlanSelector extends ConsumerWidget {
       ),
       child: DropdownButtonHideUnderline(
         child: DropdownButton<String>(
-          value: activePlanId,
+          value: displayId,
           isExpanded: true,
           icon: const Icon(Icons.arrow_drop_down, color: Colors.white),
           style: const TextStyle(
@@ -139,10 +143,6 @@ class _PlanSelector extends ConsumerWidget {
                 ),
               );
             }),
-            const DropdownMenuItem(
-              enabled: false,
-              child: Divider(height: 1, thickness: 1),
-            ),
             DropdownMenuItem(
               value: _addNewPlanValue,
               child: Row(

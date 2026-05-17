@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:audio_session/audio_session.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:just_audio/just_audio.dart';
@@ -41,7 +42,7 @@ class MusicState {
   }
 }
 
-@riverpod
+@Riverpod(keepAlive: true)
 class MusicProvider extends _$MusicProvider {
   AudioPlayer? _player;
 
@@ -122,7 +123,20 @@ class MusicProvider extends _$MusicProvider {
 
   Future<void> playLocalFile(String path, {bool loop = false}) async {
     try {
-      _player ??= AudioPlayer();
+      if (_player == null) {
+        _player = AudioPlayer();
+        // Configure audio session for background music playback
+        final session = await AudioSession.instance;
+        await session.configure(const AudioSessionConfiguration(
+          avAudioSessionCategory: AVAudioSessionCategory.playback,
+          avAudioSessionMode: AVAudioSessionMode.defaultMode,
+          androidAudioAttributes: AndroidAudioAttributes(
+            contentType: AndroidAudioContentType.music,
+            usage: AndroidAudioUsage.media,
+          ),
+          androidAudioFocusGainType: AndroidAudioFocusGainType.gain,
+        ));
+      }
       await _player!.setFilePath(path);
       if (loop) {
         _player!.setLoopMode(LoopMode.one);
@@ -160,8 +174,7 @@ class MusicProvider extends _$MusicProvider {
   Future<void> stop() async {
     try {
       await _player?.stop();
-      state = const MusicState(savedTrackPath: null);
-      await _loadSavedTrack();
+      state = state.copyWith(isPlaying: false, clearTrack: true);
     } catch (_) {}
   }
 

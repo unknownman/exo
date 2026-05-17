@@ -37,12 +37,23 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
 
   void _initWorkout() {
     final workoutStateAsync = ref.read(workoutNotifierProvider);
-    final workoutState = workoutStateAsync.valueOrNull;
-    if (workoutState == null) return;
-    final day = workoutState.getDayById(widget.dayId);
-    if (day != null) {
-      ref.read(activeWorkoutNotifierProvider.notifier).startWorkout(day);
-    }
+    workoutStateAsync.when(
+      data: (workoutState) {
+        final day = workoutState.getDayById(widget.dayId);
+        if (day != null) {
+          ref.read(activeWorkoutNotifierProvider.notifier).startWorkout(day);
+        }
+      },
+      loading: () {
+        // Data still loading — retry after a short delay
+        Future.delayed(const Duration(milliseconds: 300), () {
+          if (mounted) _initWorkout();
+        });
+      },
+      error: (_, _) {
+        // Provider errored — nothing to start
+      },
+    );
   }
 
   @override
