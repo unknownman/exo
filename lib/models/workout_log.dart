@@ -6,6 +6,7 @@ class WorkoutLog {
   final int exerciseCount;
   final int totalSets;
   final int totalDurationMinutes;
+  final bool hasMedia;
 
   const WorkoutLog({
     required this.id,
@@ -15,6 +16,7 @@ class WorkoutLog {
     required this.exerciseCount,
     required this.totalSets,
     required this.totalDurationMinutes,
+    this.hasMedia = false,
   });
 
   Map<String, dynamic> toMap() {
@@ -26,6 +28,7 @@ class WorkoutLog {
       'exerciseCount': exerciseCount,
       'totalSets': totalSets,
       'totalDurationMinutes': totalDurationMinutes,
+      'hasMedia': hasMedia,
     };
   }
 
@@ -38,6 +41,7 @@ class WorkoutLog {
       exerciseCount: map['exerciseCount'] as int,
       totalSets: map['totalSets'] as int,
       totalDurationMinutes: map['totalDurationMinutes'] as int,
+      hasMedia: map['hasMedia'] as bool? ?? false,
     );
   }
 

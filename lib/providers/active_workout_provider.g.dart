@@ -7,7 +7,7 @@ part of 'active_workout_provider.dart';
 // **************************************************************************
 
 String _$activeWorkoutNotifierHash() =>
-    r'1e8b0e692ca28b0686cbe2f3a716a87515eae6cd';
+    r'e7b30f665ffe5085bb76fe04033d826754160e1a';
 
 /// See also [ActiveWorkoutNotifier].
 @ProviderFor(ActiveWorkoutNotifier)

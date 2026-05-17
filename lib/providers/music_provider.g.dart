@@ -1,29 +1,26 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
-part of 'workout_provider.dart';
+part of 'music_provider.dart';
 
 // **************************************************************************
 // RiverpodGenerator
 // **************************************************************************
 
-String _$workoutNotifierHash() => r'795f80cccb78e1a6860bac2b51ef5bd13a14b94e';
+String _$musicProviderHash() => r'32c495592a6b9ffdff9073b8c4803865511e02ee';
 
-/// See also [WorkoutNotifier].
-@ProviderFor(WorkoutNotifier)
-final workoutNotifierProvider =
-    AutoDisposeAsyncNotifierProvider<
-      WorkoutNotifier,
-      WorkoutPlanState
-    >.internal(
-      WorkoutNotifier.new,
-      name: r'workoutNotifierProvider',
+/// See also [MusicProvider].
+@ProviderFor(MusicProvider)
+final musicProviderProvider =
+    AutoDisposeNotifierProvider<MusicProvider, MusicState>.internal(
+      MusicProvider.new,
+      name: r'musicProviderProvider',
       debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
           ? null
-          : _$workoutNotifierHash,
+          : _$musicProviderHash,
       dependencies: null,
       allTransitiveDependencies: null,
     );
 
-typedef _$WorkoutNotifier = AutoDisposeAsyncNotifier<WorkoutPlanState>;
+typedef _$MusicProvider = AutoDisposeNotifier<MusicState>;
 // ignore_for_file: type=lint
 // ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member, deprecated_member_use_from_same_package

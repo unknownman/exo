@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:exo/models/exercise.dart';
+import 'package:exo/models/exercise_media.dart';
 import 'package:exo/providers/active_workout_provider.dart';
 import 'package:exo/providers/workout_provider.dart';
-import 'package:exo/providers/tts_provider.dart';
 import 'package:exo/core/theme/app_theme.dart';
 import 'package:exo/widgets/tts_toggle_button.dart';
+import 'package:exo/widgets/exercise_media_widget.dart';
+import 'package:exo/screens/rest_screen.dart';
 
 class ActiveWorkoutScreen extends ConsumerStatefulWidget {
   final String dayId;
@@ -19,16 +21,13 @@ class ActiveWorkoutScreen extends ConsumerStatefulWidget {
 
 class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
   bool _initialized = false;
-  bool _ttsWasEnabled = false;
-  bool _wasResting = false;
-  int _previousExerciseIndex = -1;
+  bool _showDescription = false;
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     if (!_initialized) {
       _initialized = true;
-      _ttsWasEnabled = ref.read(ttsProvider);
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _initWorkout();
       });
@@ -42,54 +41,29 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
     final day = workoutState.getDayById(widget.dayId);
     if (day != null) {
       ref.read(activeWorkoutNotifierProvider.notifier).startWorkout(day);
-      final ttsEnabled = ref.read(ttsProvider);
-      if (ttsEnabled && day.exercises.isNotEmpty) {
-        ref
-            .read(ttsProvider.notifier)
-            .announceExerciseStart(day.exercises.first.name);
-      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    ref.listen<bool>(
+      activeWorkoutNotifierProvider.select((s) => s.isResting),
+      (_, isResting) {
+        if (isResting) {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (_) => const RestScreen(),
+              fullscreenDialog: true,
+            ),
+          );
+        } else {
+          Navigator.of(context).popUntil((route) => route.isFirst);
+        }
+      },
+    );
+
     final activeState = ref.watch(activeWorkoutNotifierProvider);
     final dayName = activeState.dayName ?? 'تمرین';
-
-    final isTtsEnabled = ref.watch(ttsProvider);
-    if (isTtsEnabled && !_ttsWasEnabled) {
-      _ttsWasEnabled = true;
-      final exercise = activeState.currentExercise;
-      if (exercise != null) {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          ref.read(ttsProvider.notifier).announceExerciseStart(exercise.name);
-        });
-      }
-    } else if (!isTtsEnabled) {
-      _ttsWasEnabled = false;
-    }
-
-    if (activeState.isResting && !_wasResting) {
-      final exercise = activeState.currentExercise;
-      if (exercise != null) {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          ref.read(ttsProvider.notifier).announceRestStart(exercise.restTime);
-        });
-      }
-    }
-    _wasResting = activeState.isResting;
-
-    if (activeState.currentExerciseIndex != _previousExerciseIndex &&
-        activeState.currentExerciseIndex > 0 &&
-        !activeState.isResting) {
-      final exercise = activeState.currentExercise;
-      if (exercise != null) {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          ref.read(ttsProvider.notifier).announceExerciseStart(exercise.name);
-        });
-      }
-    }
-    _previousExerciseIndex = activeState.currentExerciseIndex;
 
     final hasDay = ref.watch(
       activeWorkoutNotifierProvider.select((s) => s.hasDay),
@@ -224,125 +198,39 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
           ),
           actions: const [TTSToggleButton()],
         ),
-        body: Container(
-          color: activeState.isResting
-              ? AppTheme.tealPrimary.withAlpha(15)
-              : null,
-          child: Column(
-            children: [
-              if (activeState.isResting)
-                _buildRestBanner(activeState, provider),
-              Expanded(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.all(24),
-                  child: _buildExerciseCard(activeState, provider, exercise),
-                ),
-              ),
-              _buildBottomControls(activeState, provider),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildRestBanner(
-    ActiveWorkoutState state,
-    ActiveWorkoutNotifier provider,
-  ) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 24),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [AppTheme.tealPrimary, AppTheme.tealDark],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: const BorderRadius.vertical(bottom: Radius.circular(24)),
-      ),
-      child: SafeArea(
-        bottom: false,
-        child: Column(
+        body: Column(
           children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Icon(Icons.timer, color: Colors.white70, size: 20),
-                const SizedBox(width: 8),
-                const Text(
-                  'زمان استراحت',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Text(
-              formatWorkoutTime(state.remainingRestSeconds),
-              style: const TextStyle(
-                fontSize: 56,
-                fontWeight: FontWeight.w200,
-                color: Colors.white,
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(24),
+                child: _buildExerciseCard(activeState, provider, exercise),
               ),
             ),
-            const SizedBox(height: 12),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                TextButton.icon(
-                  onPressed: provider.skipRest,
-                  icon: const Icon(Icons.skip_next, color: Colors.white),
-                  label: const Text(
-                    'رد کردن',
-                    style: TextStyle(color: Colors.white),
-                  ),
-                  style: TextButton.styleFrom(
-                    backgroundColor: Colors.white.withAlpha(25),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                TextButton.icon(
-                  onPressed: () => _showAutoSkipDialog(provider),
-                  icon: const Icon(Icons.settings, color: Colors.white),
-                  label: const Text(
-                    'تنظیمات',
-                    style: TextStyle(color: Colors.white),
-                  ),
-                  style: TextButton.styleFrom(
-                    backgroundColor: Colors.white.withAlpha(25),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                  ),
-                ),
-              ],
-            ),
+            _buildBottomControls(activeState, provider),
           ],
         ),
       ),
     );
   }
 
-  void _showAutoSkipDialog(ActiveWorkoutNotifier provider) {
+  void _showExitDialog(ActiveWorkoutNotifier provider) {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('تنظیمات استراحت'),
-        content: const Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [Text('این قابلیت در نسخه بعدی فعال خواهد شد.')],
-        ),
+        title: const Text('خروج از تمرین'),
+        content: const Text('آیا مطمئن هستید؟ پیشرفت تمرین ذخیره نمی‌شود.'),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('بستن'),
+            child: const Text('انصراف'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              provider.cancelWorkout();
+              Navigator.of(ctx).pop();
+              Navigator.of(context).pop();
+            },
+            child: const Text('خروج'),
           ),
         ],
       ),
@@ -356,18 +244,36 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
   ) {
     return Column(
       children: [
-        Container(
-          padding: const EdgeInsets.all(24),
-          decoration: BoxDecoration(
-            color: AppTheme.tealPrimary.withAlpha(15),
-            shape: BoxShape.circle,
+        if (exercise.media.type != ExerciseMediaType.none)
+          ClipRRect(
+            borderRadius: BorderRadius.circular(20),
+            child: Container(
+              width: double.infinity,
+              height: 220,
+              color: AppTheme.tealPrimary.withAlpha(8),
+              child: ExerciseMediaWidget(
+                media: exercise.media,
+                width: double.infinity,
+                height: 220,
+                fit: BoxFit.contain,
+              ),
+            ),
+          )
+        else ...[
+          const SizedBox(height: 24),
+          Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: AppTheme.tealPrimary.withAlpha(15),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              _getEquipmentIcon(exercise.equipment),
+              size: 56,
+              color: AppTheme.tealPrimary,
+            ),
           ),
-          child: Icon(
-            _getEquipmentIcon(exercise.equipment),
-            size: 56,
-            color: AppTheme.tealPrimary,
-          ),
-        ),
+        ],
         const SizedBox(height: 16),
         Text(
           exercise.name,
@@ -386,6 +292,10 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
             style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
           ),
         ),
+        if (exercise.description.isNotEmpty) ...[
+          const SizedBox(height: 12),
+          _buildDescriptionSection(exercise.description),
+        ],
         const SizedBox(height: 24),
         _buildProgressIndicator(state),
         const SizedBox(height: 24),
@@ -393,6 +303,43 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
           _buildTimerSection(state, provider)
         else
           _buildRepsSection(state, provider),
+      ],
+    );
+  }
+
+  Widget _buildDescriptionSection(String description) {
+    return Column(
+      children: [
+        TextButton.icon(
+          onPressed: () => setState(() => _showDescription = !_showDescription),
+          icon: Icon(
+            _showDescription ? Icons.expand_less : Icons.expand_more,
+            size: 20,
+          ),
+          label: Text(
+            _showDescription ? 'بستن توضیحات' : 'نحوه اجرا',
+            style: const TextStyle(fontSize: 14),
+          ),
+        ),
+        if (_showDescription)
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.grey.shade50,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.grey.shade200),
+            ),
+            child: Text(
+              description,
+              style: TextStyle(
+                fontSize: 15,
+                color: Colors.grey.shade800,
+                height: 1.6,
+              ),
+              textAlign: TextAlign.right,
+            ),
+          ),
       ],
     );
   }
@@ -507,15 +454,7 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
           width: double.infinity,
           height: 56,
           child: ElevatedButton.icon(
-            onPressed: () {
-              final ttsEnabled = ref.read(ttsProvider);
-              if (ttsEnabled) {
-                ref
-                    .read(ttsProvider.notifier)
-                    .announceSetComplete(state.currentSet, exercise.sets);
-              }
-              provider.finishSet();
-            },
+            onPressed: () => provider.finishSet(),
             icon: const Icon(Icons.check_circle, size: 28),
             label: const Text(
               'پایان ست',
@@ -560,30 +499,6 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
               ),
           ],
         ),
-      ),
-    );
-  }
-
-  void _showExitDialog(ActiveWorkoutNotifier provider) {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('خروج از تمرین'),
-        content: const Text('آیا مطمئن هستید؟ پیشرفت تمرین ذخیره نمی‌شود.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('انصراف'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              provider.cancelWorkout();
-              Navigator.of(ctx).pop();
-              Navigator.of(context).pop();
-            },
-            child: const Text('خروج'),
-          ),
-        ],
       ),
     );
   }

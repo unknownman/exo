@@ -7,7 +7,9 @@ class TTSToggleButton extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final isEnabled = ref.watch(ttsProvider);
+    final isEnabled = ref.watch(
+      tTSServiceProvider.select((s) => s.enabled),
+    );
 
     return Builder(
       builder: (context) => IconButton(
@@ -16,7 +18,7 @@ class TTSToggleButton extends ConsumerWidget {
           color: isEnabled ? Colors.green : Colors.grey,
         ),
         onPressed: () {
-          ref.read(ttsProvider.notifier).toggle();
+          ref.read(tTSServiceProvider.notifier).toggle();
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(

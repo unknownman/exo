@@ -2,6 +2,8 @@ import 'dart:async';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../models/exercise.dart';
 import '../models/workout_plan.dart';
+import 'tts_provider.dart';
+import 'music_provider.dart';
 
 part 'active_workout_provider.g.dart';
 
@@ -9,6 +11,7 @@ part 'active_workout_provider.g.dart';
 class ActiveWorkoutNotifier extends _$ActiveWorkoutNotifier {
   Timer? _timer;
   DateTime? _workoutStartTime;
+  bool _midwayAnnounced = false;
 
   @override
   ActiveWorkoutState build() {
@@ -39,6 +42,12 @@ class ActiveWorkoutNotifier extends _$ActiveWorkoutNotifier {
       isAllDone: false,
       clearError: true,
     );
+
+    ref.read(tTSServiceProvider.notifier).announceExerciseStart(
+      day.exercises.first.name,
+    );
+
+    ref.read(musicProviderProvider.notifier).playSavedTrack();
   }
 
   void toggleTimer() {
@@ -60,20 +69,45 @@ class ActiveWorkoutNotifier extends _$ActiveWorkoutNotifier {
     }
 
     if (state.currentSet < exercise.sets) {
+      ref.read(tTSServiceProvider.notifier).announceSetComplete(
+        state.currentSet,
+        exercise.sets,
+      );
+      _populateRestSnapshots();
       state = state.copyWith(
         currentSet: state.currentSet + 1,
+        isResting: true,
         isTimedExerciseRunning: false,
         remainingWorkoutSeconds: 0,
+        remainingRestSeconds: exercise.restTime,
+        totalRestSeconds: exercise.restTime,
       );
-      _startAutoRest(exercise.restTime);
+      _startRestTimer(exercise.restTime);
     } else {
+      ref.read(tTSServiceProvider.notifier).announceSetComplete(
+        state.currentSet,
+        exercise.sets,
+      );
       nextExercise();
     }
   }
 
+  void addRestTime(int seconds) {
+    if (!state.isResting) return;
+    final newRemaining = state.remainingRestSeconds + seconds;
+    state = state.copyWith(
+      remainingRestSeconds: newRemaining,
+      totalRestSeconds: state.totalRestSeconds + seconds,
+    );
+  }
+
   void skipRest() {
     _stopTimer();
-    state = state.copyWith(isResting: false, remainingRestSeconds: 0);
+    state = state.copyWith(
+      isResting: false,
+      remainingRestSeconds: 0,
+      clearNextSnapshot: true,
+    );
     _onRestEnd();
   }
 
@@ -93,7 +127,7 @@ class ActiveWorkoutNotifier extends _$ActiveWorkoutNotifier {
 
     if (state.currentSet < exercise.sets) {
       state = state.copyWith(currentSet: exercise.sets);
-      _startAutoRest(exercise.restTime);
+      _startRestTimer(exercise.restTime);
     } else {
       _moveToNextExercise();
     }
@@ -106,6 +140,13 @@ class ActiveWorkoutNotifier extends _$ActiveWorkoutNotifier {
       return;
     }
 
+    final previousExercise = state.currentExercise;
+    if (previousExercise != null) {
+      ref.read(tTSServiceProvider.notifier).announceExerciseComplete(
+        previousExercise.name,
+      );
+    }
+
     final nextIndex = state.currentExerciseIndex + 1;
     if (nextIndex < exercises.length) {
       state = state.copyWith(
@@ -114,6 +155,10 @@ class ActiveWorkoutNotifier extends _$ActiveWorkoutNotifier {
         isResting: false,
         isTimedExerciseRunning: false,
         remainingWorkoutSeconds: 0,
+        clearNextSnapshot: true,
+      );
+      ref.read(tTSServiceProvider.notifier).announceNextExercise(
+        exercises[nextIndex].name,
       );
     } else {
       _completeWorkout();
@@ -126,19 +171,20 @@ class ActiveWorkoutNotifier extends _$ActiveWorkoutNotifier {
 
   void finishWorkout() {
     _stopTimer();
+    ref.read(musicProviderProvider.notifier).stop();
     state = ActiveWorkoutState.initial();
   }
 
   void cancelWorkout() {
     _stopTimer();
+    ref.read(musicProviderProvider.notifier).stop();
     state = ActiveWorkoutState.initial();
   }
 
-  void _startAutoRest(int seconds) {
-    state = state.copyWith(
-      isResting: true,
-      isTimedExerciseRunning: false,
-      remainingRestSeconds: seconds,
+  void _startRestTimer(int seconds) {
+    ref.read(tTSServiceProvider.notifier).announceRestStart(
+      seconds,
+      nextExerciseName: state.nextExerciseSnapshot?.name,
     );
 
     _timer = Timer.periodic(const Duration(seconds: 1), (_) {
@@ -153,8 +199,23 @@ class ActiveWorkoutNotifier extends _$ActiveWorkoutNotifier {
     });
   }
 
+  void _populateRestSnapshots() {
+    final nextIndex = state.currentExerciseIndex;
+    final nextSet = state.currentSet + 1;
+    final exercises = state.exercises;
+    if (nextIndex < exercises.length) {
+      state = state.copyWith(
+        nextExerciseSnapshot: exercises[nextIndex],
+        nextSetNumber: nextSet,
+      );
+    }
+  }
+
   void _onRestEnd() {
-    state = state.copyWith(isResting: false);
+    state = state.copyWith(
+      isResting: false,
+      clearNextSnapshot: true,
+    );
     final exercise = state.currentExercise;
     if (exercise == null) {
       _completeWorkout();
@@ -170,6 +231,9 @@ class ActiveWorkoutNotifier extends _$ActiveWorkoutNotifier {
     final exercise = state.currentExercise;
     if (exercise == null || !exercise.isTimeBased) return;
 
+    _midwayAnnounced = false;
+    final halfPoint = (exercise.repsOrDuration ~/ 2);
+
     state = state.copyWith(
       isTimedExerciseRunning: true,
       remainingWorkoutSeconds: exercise.repsOrDuration,
@@ -180,6 +244,12 @@ class ActiveWorkoutNotifier extends _$ActiveWorkoutNotifier {
         _stopTimer();
         _onTimedExerciseComplete();
         return;
+      }
+      if (!_midwayAnnounced &&
+          state.remainingWorkoutSeconds == halfPoint &&
+          halfPoint > 0) {
+        _midwayAnnounced = true;
+        ref.read(tTSServiceProvider.notifier).announceMidway();
       }
       state = state.copyWith(
         remainingWorkoutSeconds: state.remainingWorkoutSeconds - 1,
@@ -198,7 +268,7 @@ class ActiveWorkoutNotifier extends _$ActiveWorkoutNotifier {
 
     if (state.currentSet < exercise.sets) {
       state = state.copyWith(currentSet: state.currentSet + 1);
-      _startAutoRest(exercise.restTime);
+      _startRestTimer(exercise.restTime);
     } else {
       nextExercise();
     }
@@ -209,7 +279,9 @@ class ActiveWorkoutNotifier extends _$ActiveWorkoutNotifier {
       isAllDone: true,
       isResting: false,
       isTimedExerciseRunning: false,
+      clearNextSnapshot: true,
     );
+    ref.read(tTSServiceProvider.notifier).announceWorkoutComplete();
   }
 
   void _stopTimer() {
@@ -233,9 +305,12 @@ class ActiveWorkoutState {
   final bool isTimedExerciseRunning;
   final int remainingWorkoutSeconds;
   final int remainingRestSeconds;
+  final int totalRestSeconds;
   final bool isAllDone;
   final bool isLoading;
   final String? errorMessage;
+  final Exercise? nextExerciseSnapshot;
+  final int? nextSetNumber;
 
   const ActiveWorkoutState({
     this.dayId,
@@ -247,9 +322,12 @@ class ActiveWorkoutState {
     this.isTimedExerciseRunning = false,
     this.remainingWorkoutSeconds = 0,
     this.remainingRestSeconds = 0,
+    this.totalRestSeconds = 0,
     this.isAllDone = false,
     this.isLoading = false,
     this.errorMessage,
+    this.nextExerciseSnapshot,
+    this.nextSetNumber,
   });
 
   factory ActiveWorkoutState.initial() => const ActiveWorkoutState();
@@ -278,11 +356,15 @@ class ActiveWorkoutState {
     bool? isTimedExerciseRunning,
     int? remainingWorkoutSeconds,
     int? remainingRestSeconds,
+    int? totalRestSeconds,
     bool? isAllDone,
     bool? isLoading,
     String? errorMessage,
+    Exercise? nextExerciseSnapshot,
+    int? nextSetNumber,
     bool clearError = false,
     bool clearDay = false,
+    bool clearNextSnapshot = false,
   }) {
     return ActiveWorkoutState(
       dayId: clearDay ? null : (dayId ?? this.dayId),
@@ -296,9 +378,16 @@ class ActiveWorkoutState {
       remainingWorkoutSeconds:
           remainingWorkoutSeconds ?? this.remainingWorkoutSeconds,
       remainingRestSeconds: remainingRestSeconds ?? this.remainingRestSeconds,
+      totalRestSeconds: totalRestSeconds ?? this.totalRestSeconds,
       isAllDone: isAllDone ?? this.isAllDone,
       isLoading: isLoading ?? this.isLoading,
       errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
+      nextExerciseSnapshot: clearNextSnapshot
+          ? null
+          : (nextExerciseSnapshot ?? this.nextExerciseSnapshot),
+      nextSetNumber: clearNextSnapshot
+          ? null
+          : (nextSetNumber ?? this.nextSetNumber),
     );
   }
 }

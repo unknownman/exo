@@ -1,9 +1,14 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:exo/models/exercise.dart';
+import 'package:exo/models/exercise_media.dart';
 import 'package:exo/providers/workout_provider.dart';
 import 'package:exo/core/constants/app_constants.dart';
+import 'package:exo/widgets/exercise_media_widget.dart';
 
 class AddExerciseScreen extends ConsumerStatefulWidget {
   const AddExerciseScreen({super.key});
@@ -15,14 +20,16 @@ class AddExerciseScreen extends ConsumerStatefulWidget {
 class _AddExerciseScreenState extends ConsumerState<AddExerciseScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
+  final _descriptionController = TextEditingController();
+  final _coachCuesController = TextEditingController();
   final _setsController = TextEditingController();
   final _repsOrDurationController = TextEditingController();
   final _restTimeController = TextEditingController();
-  final _imagePathController = TextEditingController();
 
   bool _isTimeBased = false;
   String? _selectedEquipment;
   String? _selectedDayId;
+  ExerciseMedia? _selectedMedia;
 
   @override
   void initState() {
@@ -36,10 +43,11 @@ class _AddExerciseScreenState extends ConsumerState<AddExerciseScreen> {
   @override
   void dispose() {
     _nameController.dispose();
+    _descriptionController.dispose();
+    _coachCuesController.dispose();
     _setsController.dispose();
     _repsOrDurationController.dispose();
     _restTimeController.dispose();
-    _imagePathController.dispose();
     super.dispose();
   }
 
@@ -86,6 +94,89 @@ class _AddExerciseScreenState extends ConsumerState<AddExerciseScreen> {
     return null;
   }
 
+  ExerciseMediaType _getMediaType(String extension) {
+    switch (extension.toLowerCase()) {
+      case 'jpg':
+      case 'jpeg':
+      case 'png':
+      case 'gif':
+        return ExerciseMediaType.image;
+      case 'mp4':
+      case 'mov':
+      case 'avi':
+        return ExerciseMediaType.video;
+      case 'json':
+        return ExerciseMediaType.lottie;
+      default:
+        return ExerciseMediaType.none;
+    }
+  }
+
+  Future<void> _pickMedia() async {
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['jpg', 'jpeg', 'png', 'gif', 'mp4', 'mov', 'json'],
+    );
+
+    if (result == null || result.files.isEmpty) return;
+
+    final file = result.files.first;
+    final tempPath = file.path;
+    if (tempPath == null) return;
+
+    final extension = tempPath.split('.').last;
+    final type = _getMediaType(extension);
+
+    if (type == ExerciseMediaType.none) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('فرمت فایل پشتیبانی نمی‌شود'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+      return;
+    }
+
+    try {
+      final appDir = await getApplicationDocumentsDirectory();
+      final mediaDir = Directory('${appDir.path}/exercise_media');
+      if (!await mediaDir.exists()) {
+        await mediaDir.create(recursive: true);
+      }
+
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
+      final destPath = '${mediaDir.path}/$timestamp.$extension';
+      await File(tempPath).copy(destPath);
+
+      if (mounted) {
+        setState(() {
+          _selectedMedia = ExerciseMedia(
+            type: type,
+            source: destPath,
+            isLocal: true,
+          );
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('خطا در ذخیره فایل: $e'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
+  }
+
+  void _clearMedia() {
+    setState(() {
+      _selectedMedia = null;
+    });
+  }
+
   void _submit() {
     if (!_formKey.currentState!.validate()) return;
     if (_selectedDayId == null || _selectedEquipment == null) return;
@@ -102,14 +193,14 @@ class _AddExerciseScreenState extends ConsumerState<AddExerciseScreen> {
     final exercise = Exercise(
       id: 'ex_${DateTime.now().millisecondsSinceEpoch}',
       name: _nameController.text.trim(),
+      description: _descriptionController.text.trim(),
+      coachCues: _coachCuesController.text.trim(),
       sets: sets,
       repsOrDuration: repsOrDuration,
       isTimeBased: _isTimeBased,
       restTime: restTime,
       equipment: _selectedEquipment!,
-      imagePath: _imagePathController.text.trim().isEmpty
-          ? null
-          : _imagePathController.text.trim(),
+      media: _selectedMedia ?? const ExerciseMedia.empty(),
     );
 
     ref
@@ -182,6 +273,32 @@ class _AddExerciseScreenState extends ConsumerState<AddExerciseScreen> {
                       validator: (v) => _validateNotEmpty(v, 'نام تمرین'),
                     ),
                     const SizedBox(height: 16),
+                    TextFormField(
+                      controller: _descriptionController,
+                      maxLines: 3,
+                      textCapitalization: TextCapitalization.sentences,
+                      decoration: const InputDecoration(
+                        labelText: 'توضیحات تمرین',
+                        hintText: 'توضیحات کامل و نحوه اجرای حرکت',
+                        border: OutlineInputBorder(),
+                        alignLabelWithHint: true,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    TextFormField(
+                      controller: _coachCuesController,
+                      maxLines: 2,
+                      textCapitalization: TextCapitalization.sentences,
+                      decoration: const InputDecoration(
+                        labelText: 'راهنمای مربی',
+                        hintText: 'نکات کلیدی برای اجرای صحیح حرکت',
+                        border: OutlineInputBorder(),
+                        alignLabelWithHint: true,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    _buildMediaSection(),
+                    const SizedBox(height: 16),
                     DropdownButtonFormField<String>(
                       initialValue: _selectedEquipment,
                       decoration: const InputDecoration(
@@ -213,16 +330,6 @@ class _AddExerciseScreenState extends ConsumerState<AddExerciseScreen> {
                       onChanged: (v) {
                         if (v != null) setState(() => _selectedDayId = v);
                       },
-                    ),
-                    const SizedBox(height: 16),
-                    TextFormField(
-                      controller: _imagePathController,
-                      decoration: const InputDecoration(
-                        labelText: 'آدرس تصویر (اختیاری)',
-                        hintText: 'https://example.com/image.png',
-                        border: OutlineInputBorder(),
-                      ),
-                      keyboardType: TextInputType.url,
                     ),
                     const SizedBox(height: 16),
                     TextFormField(
@@ -291,6 +398,58 @@ class _AddExerciseScreenState extends ConsumerState<AddExerciseScreen> {
           ),
         );
       },
+    );
+  }
+
+  Widget _buildMediaSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (_selectedMedia != null) ...[
+          Stack(
+            alignment: Alignment.topRight,
+            children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: Container(
+                  width: double.infinity,
+                  height: 160,
+                  color: Colors.grey.shade100,
+                  child: ExerciseMediaWidget(
+                    media: _selectedMedia!,
+                    fit: BoxFit.contain,
+                    width: double.infinity,
+                    height: 160,
+                  ),
+                ),
+              ),
+              IconButton(
+                onPressed: _clearMedia,
+                icon: const Icon(Icons.close, color: Colors.red),
+                style: IconButton.styleFrom(
+                  backgroundColor: Colors.white.withAlpha(200),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+        ],
+        OutlinedButton.icon(
+          onPressed: _pickMedia,
+          icon: const Icon(Icons.attach_file),
+          label: Text(
+            _selectedMedia != null ? 'تغییر فایل' : 'انتخاب فایل',
+          ),
+          style: OutlinedButton.styleFrom(
+            padding: const EdgeInsets.symmetric(vertical: 14),
+          ),
+        ),
+        Text(
+          'پشتیبانی از: JPG, PNG, GIF, MP4, JSON (Lottie)',
+          style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
+          textAlign: TextAlign.center,
+        ),
+      ],
     );
   }
 }

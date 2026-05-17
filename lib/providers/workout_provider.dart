@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/exercise.dart';
+import '../models/exercise_media.dart';
 import '../models/workout_plan.dart';
 import '../models/workout_log.dart';
 
@@ -431,6 +432,7 @@ class WorkoutNotifier extends _$WorkoutNotifier {
     state = AsyncData(
       currentState.copyWith(currentDayIndex: nextDayIndex),
     );
+    await _saveData();
   }
 
   Future<void> setCurrentDayByIndex(int index) async {
@@ -569,6 +571,9 @@ class WorkoutNotifier extends _$WorkoutNotifier {
       exerciseCount: exercises.length,
       totalSets: exercises.fold(0, (sum, e) => sum + e.sets),
       totalDurationMinutes: durationMinutes,
+      hasMedia: exercises.any(
+        (e) => e.media.type != ExerciseMediaType.none,
+      ),
     );
 
     final updatedLogs = [log, ...currentState.workoutLogs];

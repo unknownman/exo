@@ -1,29 +1,26 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
-part of 'workout_provider.dart';
+part of 'tts_provider.dart';
 
 // **************************************************************************
 // RiverpodGenerator
 // **************************************************************************
 
-String _$workoutNotifierHash() => r'795f80cccb78e1a6860bac2b51ef5bd13a14b94e';
+String _$tTSServiceHash() => r'06fa55c1c2eff44af08fd854d1e3d4303aa5806f';
 
-/// See also [WorkoutNotifier].
-@ProviderFor(WorkoutNotifier)
-final workoutNotifierProvider =
-    AutoDisposeAsyncNotifierProvider<
-      WorkoutNotifier,
-      WorkoutPlanState
-    >.internal(
-      WorkoutNotifier.new,
-      name: r'workoutNotifierProvider',
+/// See also [TTSService].
+@ProviderFor(TTSService)
+final tTSServiceProvider =
+    AutoDisposeNotifierProvider<TTSService, TTSState>.internal(
+      TTSService.new,
+      name: r'tTSServiceProvider',
       debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
           ? null
-          : _$workoutNotifierHash,
+          : _$tTSServiceHash,
       dependencies: null,
       allTransitiveDependencies: null,
     );
 
-typedef _$WorkoutNotifier = AutoDisposeAsyncNotifier<WorkoutPlanState>;
+typedef _$TTSService = AutoDisposeNotifier<TTSState>;
 // ignore_for_file: type=lint
 // ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member, deprecated_member_use_from_same_package
