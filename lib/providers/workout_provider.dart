@@ -1,10 +1,10 @@
-import 'package:flutter/foundation.dart';
-import 'package:hive_flutter/hive_flutter.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../models/exercise.dart';
 import '../models/exercise_media.dart';
 import '../models/workout_plan.dart';
 import '../models/workout_log.dart';
+import '../data/repositories/workout_repository_impl.dart';
+import '../core/constants/app_strings.dart';
 
 part 'workout_provider.g.dart';
 
@@ -16,63 +16,62 @@ class WorkoutNotifier extends _$WorkoutNotifier {
   }
 
   Future<WorkoutPlanState> _loadInitialData() async {
-    try {
-      final box = await Hive.openBox('app_data');
-      final plans = (box.get('workout_plans', defaultValue: <WorkoutPlan>[])
-              as List)
-          .cast<WorkoutPlan>();
-      final savedActivePlanId = box.get('active_plan_id') as String?;
-      final savedDayIndex = box.get('current_day_index') as int?;
-      final workoutLogs = (box.get('workout_logs', defaultValue: <WorkoutLog>[])
-              as List)
-          .cast<WorkoutLog>();
+    final repository = ref.read(workoutRepositoryProvider);
 
-      List<WorkoutPlan> finalPlans = [...plans];
-      String? activePlanId;
+    final plansResult = await repository.loadPlans();
+    final activePlanIdResult = await repository.getActivePlanId();
+    final dayIndexResult = await repository.getCurrentDayIndex();
+    final logsResult = await repository.loadLogs();
 
-      if (finalPlans.isEmpty) {
-        final defaultPlan = _createDefaultPlan();
-        finalPlans = [defaultPlan];
-        activePlanId = defaultPlan.id;
-      } else {
-        activePlanId = savedActivePlanId ?? finalPlans.first.id;
-      }
+    List<WorkoutPlan> plans = [];
+    String? savedActivePlanId;
+    int? savedDayIndex;
+    List<WorkoutLog> workoutLogs = [];
+    String? errorMessage;
 
-      final activePlan = finalPlans.firstWhere(
-        (p) => p.id == activePlanId,
-        orElse: () => finalPlans.first,
-      );
+    plansResult.fold(
+      onSuccess: (data) => plans = data,
+      onError: (failure) => errorMessage = failure.message,
+    );
+    activePlanIdResult.fold(
+      onSuccess: (data) => savedActivePlanId = data,
+      onError: (failure) {},
+    );
+    dayIndexResult.fold(
+      onSuccess: (data) => savedDayIndex = data,
+      onError: (failure) {},
+    );
+    logsResult.fold(
+      onSuccess: (data) => workoutLogs = data,
+      onError: (failure) {},
+    );
 
-      final restoredDayIndex = savedDayIndex ?? 0;
+    List<WorkoutPlan> finalPlans = [...plans];
+    String? activePlanId;
 
-      return WorkoutPlanState(
-        plans: finalPlans,
-        activePlanId: activePlanId,
-        currentDayIndex: restoredDayIndex.clamp(0, activePlan.days.length - 1),
-        isLoading: false,
-        errorMessage: null,
-        workoutLogs: [...workoutLogs],
-      );
-    } catch (e) {
-      // Recovery: do NOT wipe the database. Log and create defaults only if needed.
-      debugPrint('[ExoRecovery] _loadInitialData error: $e');
-      try {
-        final box = await Hive.openBox('app_data');
-        final existingPlans = box.get('workout_plans');
-        if (existingPlans != null && existingPlans is List && existingPlans.isNotEmpty) {
-          // Data exists but failed to deserialize — keep box intact, use defaults in memory
-          debugPrint('[ExoRecovery] Hive data exists but failed to parse. Using in-memory defaults.');
-        }
-      } catch (_) {}
+    if (finalPlans.isEmpty) {
       final defaultPlan = _createDefaultPlan();
-      return WorkoutPlanState(
-        plans: [defaultPlan],
-        activePlanId: defaultPlan.id,
-        currentDayIndex: 0,
-        isLoading: false,
-        errorMessage: 'خطا در بارگذاری داده‌ها. برنامه پیش‌فرض بارگذاری شد.',
-      );
+      finalPlans = [defaultPlan];
+      activePlanId = defaultPlan.id;
+    } else {
+      activePlanId = savedActivePlanId ?? finalPlans.first.id;
     }
+
+    final activePlan = finalPlans.firstWhere(
+      (p) => p.id == activePlanId,
+      orElse: () => finalPlans.first,
+    );
+
+    final restoredDayIndex = savedDayIndex ?? 0;
+
+    return WorkoutPlanState(
+      plans: finalPlans,
+      activePlanId: activePlanId,
+      currentDayIndex: restoredDayIndex.clamp(0, activePlan.days.length - 1),
+      isLoading: false,
+      errorMessage: errorMessage,
+      workoutLogs: [...workoutLogs],
+    );
   }
 
   WorkoutPlanState _createDefaultState() {
@@ -89,9 +88,8 @@ class WorkoutNotifier extends _$WorkoutNotifier {
   WorkoutPlan _createDefaultPlan() {
     return WorkoutPlan(
       id: 'running_strength_plan',
-      name: 'برنامه ۳ روزه قدرت و حجم برای بهبود دویدن',
-      description:
-          'برنامه‌ای ترکیبی برای افزایش قدرت، حجم عضلانی کاربردی، ثبات مفاصل، بهبود عملکرد در دویدن و کاهش ریسک آسیب‌دیدگی.',
+      name: AppStrings.defaultPlanName,
+      description: AppStrings.planDescription,
       days: [_createDay1(), _createDay2(), _createDay3()],
       createdAt: DateTime.now(),
       isActive: true,
@@ -336,12 +334,12 @@ class WorkoutNotifier extends _$WorkoutNotifier {
     final currentState = state.valueOrNull;
     if (currentState == null || currentState.plans.isEmpty) return;
 
-    final box = await Hive.openBox('app_data');
-    await box.put('workout_plans', currentState.plans);
+    final repository = ref.read(workoutRepositoryProvider);
+    await repository.savePlans(currentState.plans);
     if (currentState.activePlanId != null) {
-      await box.put('active_plan_id', currentState.activePlanId);
+      await repository.saveActivePlanId(currentState.activePlanId!);
     }
-    await box.put('current_day_index', currentState.currentDayIndex);
+    await repository.saveCurrentDayIndex(currentState.currentDayIndex);
   }
 
   Future<void> _updateCurrentPlan(WorkoutPlan updatedPlan) async {
@@ -506,9 +504,8 @@ class WorkoutNotifier extends _$WorkoutNotifier {
   }
 
   Future<void> resetEverything() async {
-    final box = await Hive.openBox('app_data');
-    await box.delete('workout_plans');
-    await box.delete('active_plan_id');
+    final repository = ref.read(workoutRepositoryProvider);
+    await repository.clearAll();
     state = AsyncData(_createDefaultState());
     await _saveData();
   }
@@ -613,22 +610,19 @@ class WorkoutNotifier extends _$WorkoutNotifier {
   }
 
   Future<List<WorkoutLog>> getWorkoutLogs() async {
-    try {
-      final box = await Hive.openBox('app_data');
-      final logs =
-          (box.get('workout_logs', defaultValue: <WorkoutLog>[]) as List)
-              .cast<WorkoutLog>();
-      return List.from(logs);
-    } catch (e) {
-      return [];
-    }
+    final repository = ref.read(workoutRepositoryProvider);
+    final result = await repository.loadLogs();
+    return result.fold(
+      onSuccess: (logs) => logs,
+      onError: (_) => [],
+    );
   }
 
   Future<void> _saveLogs() async {
     final currentState = state.valueOrNull;
     if (currentState == null) return;
-    final box = await Hive.openBox('app_data');
-    await box.put('workout_logs', currentState.workoutLogs);
+    final repository = ref.read(workoutRepositoryProvider);
+    await repository.saveLogs(currentState.workoutLogs);
   }
 
   Future<void> createPlan(String name, {List<String>? dayNames}) async {

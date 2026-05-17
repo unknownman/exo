@@ -5,6 +5,7 @@ import 'package:hive_flutter/hive_flutter.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import '../core/utils/logger.dart';
 
 part 'music_provider.g.dart';
 
@@ -62,7 +63,7 @@ class MusicProvider extends _$MusicProvider {
       if (path != null && path.isNotEmpty) {
         state = state.copyWith(savedTrackPath: path);
       }
-    } catch (_) {}
+    } catch (e, st) { AppLogger.logError(e, st); }
   }
 
   Future<void> _saveTrackPath(String path) async {
@@ -102,7 +103,7 @@ class MusicProvider extends _$MusicProvider {
 
       await _saveTrackPath(destPath);
       state = state.copyWith(savedTrackPath: destPath);
-    } catch (_) {}
+    } catch (e, st) { AppLogger.logError(e, st); }
   }
 
   Future<void> clearBackgroundMusic() async {
@@ -148,7 +149,7 @@ class MusicProvider extends _$MusicProvider {
         currentTrack: path,
         savedTrackPath: state.savedTrackPath,
       );
-    } catch (_) {}
+    } catch (e, st) { AppLogger.logError(e, st); }
   }
 
   String? getSavedTrackName() {
@@ -161,28 +162,28 @@ class MusicProvider extends _$MusicProvider {
     try {
       await _player?.pause();
       state = state.copyWith(isPlaying: false);
-    } catch (_) {}
+    } catch (e, st) { AppLogger.logError(e, st); }
   }
 
   Future<void> resume() async {
     try {
       await _player?.play();
       state = state.copyWith(isPlaying: true);
-    } catch (_) {}
+    } catch (e, st) { AppLogger.logError(e, st); }
   }
 
   Future<void> stop() async {
     try {
       await _player?.stop();
       state = state.copyWith(isPlaying: false, clearTrack: true);
-    } catch (_) {}
+    } catch (e, st) { AppLogger.logError(e, st); }
   }
 
   Future<void> setVolume(double volume) async {
     try {
       await _player?.setVolume(volume);
       state = state.copyWith(volume: volume);
-    } catch (_) {}
+    } catch (e, st) { AppLogger.logError(e, st); }
   }
 
   Future<void> duck() async {

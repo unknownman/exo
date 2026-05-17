@@ -1,5 +1,6 @@
 import 'package:flutter_tts/flutter_tts.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import '../core/utils/logger.dart';
 import 'music_provider.dart';
 
 part 'tts_provider.g.dart';
@@ -28,9 +29,10 @@ class TTSState {
   }
 }
 
-@riverpod
+@Riverpod(keepAlive: true)
 class TTSService extends _$TTSService {
   FlutterTts? _flutterTts;
+  bool _isInitialized = false;
 
   @override
   TTSState build() {
@@ -47,7 +49,7 @@ class TTSService extends _$TTSService {
       bool faAvailable = false;
       try {
         faAvailable = await _flutterTts?.isLanguageAvailable('fa-IR') ?? false;
-      } catch (_) {}
+      } catch (e, st) { AppLogger.logError(e, st); }
 
       if (faAvailable) {
         await _flutterTts?.setLanguage('fa-IR');
@@ -68,9 +70,11 @@ class TTSService extends _$TTSService {
         state = state.copyWith(isSpeaking: false);
         ref.read(musicProviderProvider.notifier).unduck();
       });
-    } catch (_) {
+    } catch (e, st) {
       _flutterTts = null;
+      AppLogger.logError(e, st);
     }
+    _isInitialized = true;
   }
 
   void toggle() {
@@ -86,12 +90,20 @@ class TTSService extends _$TTSService {
   }
 
   Future<void> speak(String text) async {
-    if (!state.enabled || _flutterTts == null) return;
+    if (!state.enabled) return;
+
+    // Race condition fix
+    while (!_isInitialized) {
+      await Future.delayed(const Duration(milliseconds: 100));
+    }
+    if (_flutterTts == null) return;
+
     try {
       await ref.read(musicProviderProvider.notifier).duck();
       await _flutterTts?.speak(text);
-    } catch (_) {
+    } catch (e, st) {
       ref.read(musicProviderProvider.notifier).unduck();
+      AppLogger.logError(e, st);
     }
   }
 
@@ -100,7 +112,7 @@ class TTSService extends _$TTSService {
       await _flutterTts?.stop();
       state = state.copyWith(isSpeaking: false);
       ref.read(musicProviderProvider.notifier).unduck();
-    } catch (_) {}
+    } catch (e, st) { AppLogger.logError(e, st); }
   }
 
   Future<void> announceExerciseStart(String exerciseName) async {

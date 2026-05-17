@@ -5,6 +5,7 @@ import 'package:exo/models/exercise_media.dart';
 import 'package:exo/providers/active_workout_provider.dart';
 import 'package:exo/core/theme/app_theme.dart';
 import 'package:exo/widgets/exercise_media_widget.dart';
+import 'package:exo/core/constants/app_strings.dart';
 
 class RestScreen extends ConsumerStatefulWidget {
   const RestScreen({super.key});
@@ -49,7 +50,7 @@ class _RestScreenState extends ConsumerState<RestScreen> {
               children: [
                 const Spacer(flex: 2),
                 const Text(
-                  'زمان استراحت',
+                  AppStrings.restTime,
                   style: TextStyle(
                     fontSize: 22,
                     color: Colors.white70,
@@ -147,9 +148,9 @@ class _RestScreenState extends ConsumerState<RestScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'بعدی',
-                  style: const TextStyle(
+                const Text(
+                  AppStrings.nextExercise,
+                  style: TextStyle(
                     fontSize: 12,
                     color: Colors.white54,
                     fontWeight: FontWeight.w500,
@@ -193,7 +194,7 @@ class _RestScreenState extends ConsumerState<RestScreen> {
             onPressed: () => provider.addRestTime(20),
             icon: const Icon(Icons.add, color: Colors.white),
             label: const Text(
-              '۲۰+ ثانیه',
+              AppStrings.add20Seconds,
               style: TextStyle(color: Colors.white),
             ),
             style: OutlinedButton.styleFrom(
@@ -211,7 +212,7 @@ class _RestScreenState extends ConsumerState<RestScreen> {
             onPressed: () => provider.skipRest(),
             icon: const Icon(Icons.skip_next),
             label: const Text(
-              'رد کردن',
+              AppStrings.skipRest,
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,

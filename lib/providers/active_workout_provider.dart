@@ -1,24 +1,127 @@
 import 'dart:async';
+import 'package:flutter/widgets.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../models/exercise.dart';
 import '../models/workout_plan.dart';
+import '../core/utils/logger.dart';
+import 'workout_provider.dart';
 import 'tts_provider.dart';
 import 'music_provider.dart';
 
 part 'active_workout_provider.g.dart';
 
-@riverpod
+@Riverpod(keepAlive: true)
 class ActiveWorkoutNotifier extends _$ActiveWorkoutNotifier {
   Timer? _timer;
   DateTime? _workoutStartTime;
   bool _midwayAnnounced = false;
+  AppLifecycleListener? _lifecycleListener;
+  DateTime? _lastBackgroundTime;
 
   @override
   ActiveWorkoutState build() {
+    _lifecycleListener = AppLifecycleListener(
+      onStateChange: _onLifecycleStateChange,
+    );
     ref.onDispose(() {
+      _lifecycleListener?.dispose();
       _stopTimer();
     });
+    _restoreActiveWorkoutSnapshot();
     return ActiveWorkoutState.initial();
+  }
+
+  void _onLifecycleStateChange(AppLifecycleState appState) {
+    if (appState == AppLifecycleState.paused || appState == AppLifecycleState.inactive) {
+      _lastBackgroundTime = DateTime.now();
+      _persistActiveWorkout();
+    } else if (appState == AppLifecycleState.resumed) {
+      if (_lastBackgroundTime != null) {
+        final elapsed = DateTime.now().difference(_lastBackgroundTime!).inSeconds;
+        _lastBackgroundTime = null;
+        if (state.isResting && _timer != null && _timer!.isActive) {
+          final newRemaining = state.remainingRestSeconds - elapsed;
+          state = state.copyWith(remainingRestSeconds: newRemaining > 0 ? newRemaining : 0);
+          if (newRemaining <= 0) {
+            _stopTimer();
+            _onRestEnd();
+          }
+        } else if (state.isTimedExerciseRunning && _timer != null && _timer!.isActive) {
+          final newRemaining = state.remainingWorkoutSeconds - elapsed;
+          state = state.copyWith(remainingWorkoutSeconds: newRemaining > 0 ? newRemaining : 0);
+          if (newRemaining <= 0) {
+            _stopTimer();
+            _onTimedExerciseComplete();
+          }
+        }
+      }
+    }
+  }
+
+  Future<void> _restoreActiveWorkoutSnapshot() async {
+    try {
+      final box = await Hive.openBox('active_workout_snapshot');
+      if (box.isNotEmpty) {
+        final dayId = box.get('dayId') as String?;
+        final currentExerciseIndex = box.get('currentExerciseIndex') as int?;
+        final currentSet = box.get('currentSet') as int?;
+        final remainingRestSeconds = box.get('remainingRestSeconds') as int?;
+        final workoutStartTimeMs = box.get('workoutStartTime') as int?;
+        
+        if (dayId != null) {
+          final workoutState = ref.read(workoutNotifierProvider).valueOrNull;
+          if (workoutState != null) {
+            final day = workoutState.getDayById(dayId);
+            if (day != null) {
+              _workoutStartTime = workoutStartTimeMs != null ? DateTime.fromMillisecondsSinceEpoch(workoutStartTimeMs) : null;
+              state = state.copyWith(
+                dayId: day.id,
+                dayName: day.name,
+                exercises: day.exercises,
+                currentExerciseIndex: currentExerciseIndex ?? 0,
+                currentSet: currentSet ?? 1,
+                remainingRestSeconds: remainingRestSeconds ?? 0,
+                isResting: (remainingRestSeconds ?? 0) > 0,
+                isTimedExerciseRunning: false,
+                isAllDone: false,
+                clearError: true,
+              );
+              if ((remainingRestSeconds ?? 0) > 0) {
+                _startRestTimer(remainingRestSeconds!);
+              }
+            }
+          }
+        }
+      }
+    } catch (e, st) {
+      AppLogger.logError(e, st);
+    }
+  }
+
+  Future<void> _persistActiveWorkout() async {
+    if (state.dayId == null) return;
+    try {
+      final box = await Hive.openBox('active_workout_snapshot');
+      await box.put('dayId', state.dayId!);
+      await box.put('currentExerciseIndex', state.currentExerciseIndex);
+      await box.put('currentSet', state.currentSet);
+      await box.put('remainingRestSeconds', state.remainingRestSeconds);
+      if (_workoutStartTime != null) {
+        await box.put('workoutStartTime', _workoutStartTime!.millisecondsSinceEpoch);
+      }
+    } catch (e, st) {
+      AppLogger.logError(e, st);
+    }
+  }
+
+  Future<void> clearActiveWorkoutSnapshot() async {
+    try {
+      final box = await Hive.openBox('active_workout_snapshot');
+      await box.clear();
+    } catch (e, st) {
+      AppLogger.logError(e, st);
+    }
   }
 
   void startWorkout(WorkoutDay day) {
@@ -174,12 +277,14 @@ class ActiveWorkoutNotifier extends _$ActiveWorkoutNotifier {
 
   void finishWorkout() {
     _stopTimer();
+    clearActiveWorkoutSnapshot();
     ref.read(musicProviderProvider.notifier).stop();
     state = ActiveWorkoutState.initial();
   }
 
   void cancelWorkout() {
     _stopTimer();
+    clearActiveWorkoutSnapshot();
     ref.read(musicProviderProvider.notifier).stop();
     state = ActiveWorkoutState.initial();
   }
