@@ -9,6 +9,7 @@ import 'package:exo/models/exercise_media.dart';
 import 'package:exo/providers/workout_provider.dart';
 import 'package:exo/core/constants/app_constants.dart';
 import 'package:exo/widgets/exercise_media_widget.dart';
+import 'package:exo/core/constants/app_strings.dart';
 
 class AddExerciseScreen extends ConsumerStatefulWidget {
   const AddExerciseScreen({super.key});
@@ -53,7 +54,7 @@ class _AddExerciseScreenState extends ConsumerState<AddExerciseScreen> {
 
   String? _validateNotEmpty(String? value, String fieldName) {
     if (value == null || value.trim().isEmpty) {
-      return '$fieldName را وارد کنید';
+      return AppStrings.fieldRequired.replaceFirst('%s', fieldName);
     }
     return null;
   }
@@ -64,32 +65,32 @@ class _AddExerciseScreenState extends ConsumerState<AddExerciseScreen> {
 
     final number = int.tryParse(value!.trim());
     if (number == null) {
-      return 'عدد معتبر وارد کنید';
+      return AppStrings.enterValidNumber;
     }
     if (number <= 0) {
-      return 'عدد مثبت وارد کنید';
+      return AppStrings.enterPositiveNumber;
     }
     return null;
   }
 
   String? _validateRestTime(String? value) {
-    final error = _validatePositiveInt(value, 'زمان استراحت');
+    final error = _validatePositiveInt(value, AppStrings.restTime);
     if (error != null) return error;
 
     final number = int.parse(value!.trim());
     if (number < 5 || number > 300) {
-      return 'زمان استراحت باید بین ۵ تا ۳۰۰ ثانیه باشد';
+      return AppStrings.restTimeRangeError;
     }
     return null;
   }
 
   String? _validateSets(String? value) {
-    final error = _validatePositiveInt(value, 'تعداد ست‌ها');
+    final error = _validatePositiveInt(value, AppStrings.numberOfSets);
     if (error != null) return error;
 
     final number = int.parse(value!.trim());
     if (number > 20) {
-      return 'تعداد ست نباید بیشتر از ۲۰ باشد';
+      return AppStrings.setsCountError;
     }
     return null;
   }
@@ -130,8 +131,8 @@ class _AddExerciseScreenState extends ConsumerState<AddExerciseScreen> {
     if (type == ExerciseMediaType.none) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('فرمت فایل پشتیبانی نمی‌شود'),
+          SnackBar(
+            content: const Text(AppStrings.unsupportedFileFormat),
             behavior: SnackBarBehavior.floating,
           ),
         );
@@ -163,7 +164,7 @@ class _AddExerciseScreenState extends ConsumerState<AddExerciseScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('خطا در ذخیره فایل: $e'),
+            content: Text('${AppStrings.fileSaveError}$e'),
             behavior: SnackBarBehavior.floating,
           ),
         );
@@ -216,19 +217,19 @@ class _AddExerciseScreenState extends ConsumerState<AddExerciseScreen> {
     return stateAsync.when(
       loading: () =>
           const Scaffold(body: Center(child: CircularProgressIndicator())),
-      error: (e, _) => Scaffold(body: Center(child: Text('خطا: $e'))),
+      error: (e, _) => Scaffold(body: Center(child: Text('${AppStrings.errorWithMessage}$e'))),
       data: (WorkoutPlanState state) {
         final plan = state.plan;
         if (plan == null || plan.days.isEmpty) {
           return const Scaffold(
-            body: Center(child: Text('برنامه‌ای وجود ندارد')),
+            body: Center(child: Text(AppStrings.noPlan)),
           );
         }
 
         final unlockedDays = plan.days.where((d) => d.isUnlocked).toList();
         if (unlockedDays.isEmpty) {
           return const Scaffold(
-            body: Center(child: Text('هیچ روز فعالی وجود ندارد')),
+            body: Center(child: Text(AppStrings.noActiveDays)),
           );
         }
 
@@ -254,7 +255,7 @@ class _AddExerciseScreenState extends ConsumerState<AddExerciseScreen> {
             .toList();
 
         return Scaffold(
-          appBar: AppBar(title: const Text('افزودن تمرین')),
+          appBar: AppBar(title: const Text(AppStrings.addExercise)),
             body: SingleChildScrollView(
               padding: const EdgeInsets.all(16),
               child: Form(
@@ -266,10 +267,10 @@ class _AddExerciseScreenState extends ConsumerState<AddExerciseScreen> {
                       controller: _nameController,
                       textCapitalization: TextCapitalization.words,
                       decoration: const InputDecoration(
-                        labelText: 'نام تمرین',
+                        labelText: AppStrings.exerciseNameInput,
                         border: OutlineInputBorder(),
                       ),
-                      validator: (v) => _validateNotEmpty(v, 'نام تمرین'),
+                      validator: (v) => _validateNotEmpty(v, AppStrings.exerciseNameInput),
                     ),
                     const SizedBox(height: 16),
                     TextFormField(
@@ -277,8 +278,8 @@ class _AddExerciseScreenState extends ConsumerState<AddExerciseScreen> {
                       maxLines: 3,
                       textCapitalization: TextCapitalization.sentences,
                       decoration: const InputDecoration(
-                        labelText: 'توضیحات تمرین',
-                        hintText: 'توضیحات کامل و نحوه اجرای حرکت',
+                        labelText: AppStrings.exerciseDescription,
+                        hintText: AppStrings.exerciseDescriptionHint,
                         border: OutlineInputBorder(),
                         alignLabelWithHint: true,
                       ),
@@ -289,8 +290,8 @@ class _AddExerciseScreenState extends ConsumerState<AddExerciseScreen> {
                       maxLines: 2,
                       textCapitalization: TextCapitalization.sentences,
                       decoration: const InputDecoration(
-                        labelText: 'راهنمای مربی',
-                        hintText: 'نکات کلیدی برای اجرای صحیح حرکت',
+                        labelText: AppStrings.coachCues,
+                        hintText: AppStrings.coachCuesHint,
                         border: OutlineInputBorder(),
                         alignLabelWithHint: true,
                       ),
@@ -301,7 +302,7 @@ class _AddExerciseScreenState extends ConsumerState<AddExerciseScreen> {
                     DropdownButtonFormField<String>(
                       initialValue: _selectedEquipment,
                       decoration: const InputDecoration(
-                        labelText: 'تجهیزات',
+                        labelText: AppStrings.equipment,
                         border: OutlineInputBorder(),
                       ),
                       isExpanded: true,
@@ -321,7 +322,7 @@ class _AddExerciseScreenState extends ConsumerState<AddExerciseScreen> {
                     DropdownButtonFormField<String>(
                       initialValue: effectiveDayId,
                       decoration: const InputDecoration(
-                        labelText: 'روز تمرینی',
+                        labelText: AppStrings.workoutDay,
                         border: OutlineInputBorder(),
                       ),
                       isExpanded: true,
@@ -336,18 +337,18 @@ class _AddExerciseScreenState extends ConsumerState<AddExerciseScreen> {
                       keyboardType: TextInputType.number,
                       inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                       decoration: const InputDecoration(
-                        labelText: 'تعداد ست‌ها',
+                        labelText: AppStrings.numberOfSets,
                         border: OutlineInputBorder(),
                       ),
                       validator: _validateSets,
                     ),
                     const SizedBox(height: 16),
                     SwitchListTile(
-                      title: Text(_isTimeBased ? 'زمانی' : 'تکراری'),
+                      title: Text(_isTimeBased ? AppStrings.timed : AppStrings.repBased),
                       subtitle: Text(
                         _isTimeBased
-                            ? 'مدت زمان هر ست بر حسب ثانیه'
-                            : 'تعداد تکرار در هر ست',
+                            ? AppStrings.timedSubtitle
+                            : AppStrings.repsSubtitle,
                       ),
                       value: _isTimeBased,
                       onChanged: (v) {
@@ -365,11 +366,11 @@ class _AddExerciseScreenState extends ConsumerState<AddExerciseScreen> {
                       inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                       decoration: InputDecoration(
                         labelText: _isTimeBased
-                            ? 'زمان هر ست (ثانیه)'
-                            : 'تعداد تکرار',
+                            ? AppStrings.timePerSet
+                            : AppStrings.repsCount,
                         border: const OutlineInputBorder(),
                       ),
-                      validator: (v) => _validatePositiveInt(v, 'این فیلد'),
+                      validator: (v) => _validatePositiveInt(v, AppStrings.fieldLabel),
                     ),
                     const SizedBox(height: 16),
                     TextFormField(
@@ -377,7 +378,7 @@ class _AddExerciseScreenState extends ConsumerState<AddExerciseScreen> {
                       keyboardType: TextInputType.number,
                       inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                       decoration: const InputDecoration(
-                        labelText: 'زمان استراحت (ثانیه)',
+                        labelText: AppStrings.restTimeSeconds,
                         border: OutlineInputBorder(),
                       ),
                       validator: _validateRestTime,
@@ -388,7 +389,7 @@ class _AddExerciseScreenState extends ConsumerState<AddExerciseScreen> {
                       style: ElevatedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 16),
                       ),
-                      child: const Text('ثبت تمرین'),
+                      child: const Text(AppStrings.saveExercise),
                     ),
                   ],
               ),
@@ -436,14 +437,14 @@ class _AddExerciseScreenState extends ConsumerState<AddExerciseScreen> {
           onPressed: _pickMedia,
           icon: const Icon(Icons.attach_file),
           label: Text(
-            _selectedMedia != null ? 'تغییر فایل' : 'انتخاب فایل',
+            _selectedMedia != null ? AppStrings.changeFile : AppStrings.selectFile,
           ),
           style: OutlinedButton.styleFrom(
             padding: const EdgeInsets.symmetric(vertical: 14),
           ),
         ),
         Text(
-          'پشتیبانی از: JPG, PNG, GIF, MP4, JSON (Lottie)',
+          AppStrings.supportedMediaFormats,
           style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
           textAlign: TextAlign.center,
         ),

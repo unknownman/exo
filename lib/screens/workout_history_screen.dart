@@ -4,6 +4,7 @@ import 'package:exo/providers/workout_provider.dart';
 import 'package:exo/models/workout_log.dart';
 import 'package:exo/core/theme/app_theme.dart';
 import 'package:exo/screens/shell_screen.dart';
+import 'package:exo/core/constants/app_strings.dart';
 
 class WorkoutHistoryScreen extends ConsumerWidget {
   const WorkoutHistoryScreen({super.key});
@@ -13,7 +14,7 @@ class WorkoutHistoryScreen extends ConsumerWidget {
     final stateAsync = ref.watch(workoutNotifierProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('تاریخچه تمرینات')),
+      appBar: AppBar(title: const Text(AppStrings.workoutHistory)),
       body: stateAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(child: Text('خطا: $e')),
@@ -59,7 +60,7 @@ class WorkoutHistoryScreen extends ConsumerWidget {
             ),
             const SizedBox(height: 20),
             const Text(
-              'هنوز تمرینی ثبت نشده',
+              AppStrings.noWorkoutLogged,
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
@@ -68,7 +69,7 @@ class WorkoutHistoryScreen extends ConsumerWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              'پس از اتمام اولین تمرین، تاریخچه‌ات اینجا نمایش داده می‌شود.',
+              AppStrings.historyEmptyHint,
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 14,
@@ -82,7 +83,7 @@ class WorkoutHistoryScreen extends ConsumerWidget {
                 ref.read(selectedTabProvider.notifier).state = 0;
               },
               icon: const Icon(Icons.play_arrow, size: 20),
-              label: const Text('شروع اولین تمرین'),
+              label: const Text(AppStrings.startFirstWorkout),
               style: ElevatedButton.styleFrom(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 28,
@@ -159,12 +160,12 @@ class _WorkoutLogCard extends StatelessWidget {
                     children: [
                       _InfoChip(
                         icon: Icons.fitness_center,
-                        label: '${log.exerciseCount} تمرین',
+                        label: '${log.exerciseCount} ${AppStrings.exercises}',
                       ),
                       const SizedBox(width: 12),
                       _InfoChip(
                         icon: Icons.repeat,
-                        label: '${log.totalSets} ست',
+                        label: '${log.totalSets} ${AppStrings.set}',
                       ),
                     ],
                   ),
@@ -184,7 +185,7 @@ class _WorkoutLogCard extends StatelessWidget {
                   ),
                 ),
                 Text(
-                  'دقیقه',
+                  AppStrings.minutes,
                   style: TextStyle(
                     fontSize: 12,
                     color: Colors.grey.shade500,
@@ -210,7 +211,7 @@ class _WorkoutLogCard extends StatelessWidget {
                       ),
                       SizedBox(width: 2),
                       Text(
-                        'انجام شد',
+                        AppStrings.completed,
                         style: TextStyle(
                           fontSize: 10,
                           fontWeight: FontWeight.bold,

@@ -8,6 +8,7 @@ import 'package:exo/core/theme/app_theme.dart';
 import 'package:exo/widgets/tts_toggle_button.dart';
 import 'package:exo/widgets/exercise_media_widget.dart';
 import 'package:exo/screens/rest_screen.dart';
+import 'package:exo/core/constants/app_strings.dart';
 
 class ActiveWorkoutScreen extends ConsumerStatefulWidget {
   final String dayId;
@@ -77,7 +78,7 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
     );
 
     final activeState = ref.watch(activeWorkoutNotifierProvider);
-    final dayName = activeState.dayName ?? 'تمرین';
+    final dayName = activeState.dayName ?? AppStrings.workoutFallbackName;
 
     final hasDay = ref.watch(
       activeWorkoutNotifierProvider.select((s) => s.hasDay),
@@ -111,7 +112,7 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
 
   Widget _buildErrorView(String message) {
     return Scaffold(
-      appBar: AppBar(title: const Text('خطا')),
+      appBar: AppBar(title: const Text(AppStrings.errorTitle)),
       body: Center(
         child: Padding(
           padding: const EdgeInsets.all(32),
@@ -128,7 +129,7 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
               const SizedBox(height: 24),
               ElevatedButton(
                 onPressed: () => Navigator.of(context).pop(),
-                child: const Text('بازگشت'),
+                child: const Text(AppStrings.back),
               ),
             ],
           ),
@@ -151,12 +152,12 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
               const Icon(Icons.celebration, size: 80, color: Colors.green),
               const SizedBox(height: 24),
               const Text(
-                'آفرین! تمرین با موفقیت انجام شد',
+                AppStrings.workoutComplete,
                 style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 8),
               Text(
-                'تمرین $dayName ثبت شد',
+                AppStrings.workoutLogged.replaceFirst('%s', dayName),
                 style: TextStyle(fontSize: 16, color: Colors.grey.shade600),
               ),
               const SizedBox(height: 48),
@@ -173,7 +174,7 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
                   navigator.popUntil((route) => route.isFirst);
                 },
                 icon: const Icon(Icons.check),
-                label: const Text('ثبت و بازگشت'),
+                label: const Text(AppStrings.done),
                 style: ElevatedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 32,
@@ -222,12 +223,12 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('خروج از تمرین'),
-        content: const Text('آیا مطمئن هستید؟ پیشرفت تمرین ذخیره نمی‌شود.'),
+        title: const Text(AppStrings.exitWorkoutTitle),
+        content: const Text(AppStrings.exitWorkoutConfirm),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('انصراف'),
+            child: const Text(AppStrings.dismiss),
           ),
           ElevatedButton(
             onPressed: () {
@@ -235,7 +236,7 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
               Navigator.of(ctx).pop();
               Navigator.of(context).pop();
             },
-            child: const Text('خروج'),
+            child: const Text(AppStrings.exit),
           ),
         ],
       ),
@@ -322,7 +323,7 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
             size: 20,
           ),
           label: Text(
-            _showDescription ? 'بستن توضیحات' : 'نحوه اجرا',
+            _showDescription ? AppStrings.hideDescription : AppStrings.showDescription,
             style: const TextStyle(fontSize: 14),
           ),
         ),
@@ -361,13 +362,13 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
         children: [
           _buildProgressItem(
             icon: Icons.fitness_center,
-            label: 'ست',
+            label: AppStrings.set,
             value: '${state.currentSet}/${state.currentExercise?.sets ?? 0}',
           ),
           Container(width: 1, height: 40, color: Colors.grey.shade300),
           _buildProgressItem(
             icon: Icons.replay,
-            label: 'تمرین',
+            label: AppStrings.exercises,
             value: '${state.currentExerciseIndex + 1}/${state.totalExercises}',
           ),
         ],
@@ -413,7 +414,7 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
           icon: Icon(
             state.isTimedExerciseRunning ? Icons.pause : Icons.play_arrow,
           ),
-          label: Text(state.isTimedExerciseRunning ? 'توقف' : 'شروع'),
+          label: Text(state.isTimedExerciseRunning ? AppStrings.pause : AppStrings.start),
           style: ElevatedButton.styleFrom(
             padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 14),
           ),
@@ -448,7 +449,7 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
                 ),
               ),
               Text(
-                exercise.isTimeBased ? 'ثانیه' : 'تکرار',
+                exercise.isTimeBased ? AppStrings.second : AppStrings.rep,
                 style: TextStyle(fontSize: 20, color: AppTheme.tealDark),
               ),
             ],
@@ -462,7 +463,7 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
             onPressed: () => provider.finishSet(),
             icon: const Icon(Icons.check_circle, size: 28),
             label: const Text(
-              'پایان ست',
+              AppStrings.finishSet,
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             style: ElevatedButton.styleFrom(
@@ -493,14 +494,14 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
             TextButton.icon(
               onPressed: isSkippingExercise ? provider.skipExercise : null,
               icon: const Icon(Icons.skip_next),
-              label: Text(isSkippingExercise ? 'رد کردن تمرین' : 'رد کردن'),
+              label: Text(isSkippingExercise ? AppStrings.skipExercise : AppStrings.skip),
             ),
             const Spacer(),
             if (hasNextExercise)
               TextButton.icon(
                 onPressed: provider.nextExercise,
                 icon: const Icon(Icons.fast_forward),
-                label: const Text('تمرین بعدی'),
+                label: const Text(AppStrings.nextExerciseLabel),
               ),
           ],
         ),

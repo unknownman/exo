@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:exo/providers/workout_provider.dart';
+import 'package:exo/core/constants/app_strings.dart';
 
 class CreatePlanScreen extends ConsumerStatefulWidget {
   const CreatePlanScreen({super.key});
@@ -71,7 +72,7 @@ class _CreatePlanScreenState extends ConsumerState<CreatePlanScreen> {
     return Directionality(
       textDirection: TextDirection.rtl,
       child: Scaffold(
-        appBar: AppBar(title: const Text('ایجاد برنامه جدید')),
+        appBar: AppBar(title: const Text(AppStrings.createNewPlan)),
         body: SingleChildScrollView(
           padding: const EdgeInsets.all(16),
           child: Form(
@@ -86,7 +87,7 @@ class _CreatePlanScreenState extends ConsumerState<CreatePlanScreen> {
                     border: OutlineInputBorder(),
                   ),
                   validator: (v) => (v == null || v.trim().isEmpty)
-                      ? 'نام برنامه را وارد کنید'
+                      ? AppStrings.planNameRequired
                       : null,
                 ),
                 const SizedBox(height: 24),
@@ -94,7 +95,7 @@ class _CreatePlanScreenState extends ConsumerState<CreatePlanScreen> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     const Text(
-                      'روزهای تمرین',
+                      AppStrings.workoutDays,
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
@@ -103,7 +104,7 @@ class _CreatePlanScreenState extends ConsumerState<CreatePlanScreen> {
                     TextButton.icon(
                       onPressed: _addDay,
                       icon: const Icon(Icons.add),
-                      label: const Text('افزودن روز'),
+                      label: const Text(AppStrings.addDay),
                     ),
                   ],
                 ),
@@ -134,7 +135,7 @@ class _CreatePlanScreenState extends ConsumerState<CreatePlanScreen> {
                   style: ElevatedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 16),
                   ),
-                  child: const Text('ایجاد برنامه'),
+                  child: const Text(AppStrings.createPlan),
                 ),
               ],
             ),

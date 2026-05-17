@@ -8,6 +8,7 @@ import 'package:exo/screens/add_exercise_screen.dart';
 import 'package:exo/screens/create_plan_screen.dart';
 import 'package:exo/widgets/tts_toggle_button.dart';
 import 'package:exo/core/theme/app_theme.dart';
+import 'package:exo/core/constants/app_strings.dart';
 
 const _addNewPlanValue = '__add_new_plan__';
 
@@ -28,7 +29,7 @@ class DashboardScreen extends ConsumerWidget {
             children: [
               const Icon(Icons.error_outline, size: 64, color: Colors.red),
               const SizedBox(height: 16),
-              Text('خطا: $error'),
+              Text('${AppStrings.errorWithMessage}$error'),
             ],
           ),
         ),
@@ -75,21 +76,21 @@ class DashboardScreen extends ConsumerWidget {
 
   Widget _buildNoPlanView(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('داشبورد')),
+      appBar: AppBar(title: const Text(AppStrings.dashboardTitle)),
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             const Icon(Icons.fitness_center, size: 80, color: Colors.grey),
             const SizedBox(height: 24),
-            const Text('هنوز برنامه‌ای ندارید', style: TextStyle(fontSize: 20)),
+            const Text(AppStrings.noPlanYet, style: TextStyle(fontSize: 20)),
             const SizedBox(height: 32),
             ElevatedButton.icon(
               onPressed: () => Navigator.of(context).push(
                 MaterialPageRoute(builder: (_) => const CreatePlanScreen()),
               ),
               icon: const Icon(Icons.add),
-              label: const Text('ایجاد برنامه جدید'),
+              label: const Text(AppStrings.createNewPlan),
             ),
           ],
         ),
@@ -154,7 +155,7 @@ class _PlanSelector extends ConsumerWidget {
                   ),
                   const SizedBox(width: 8),
                   Text(
-                    'ایجاد برنامه جدید',
+                    AppStrings.createNewPlan,
                     style: TextStyle(
                       color: AppTheme.tealPrimary,
                       fontWeight: FontWeight.bold,
@@ -366,7 +367,7 @@ class _StartWorkoutButton extends ConsumerWidget {
                 ),
         icon: Icon(isCompleted ? Icons.check_circle : Icons.play_arrow),
         label: Text(
-          isCompleted ? 'انجام شد' : 'شروع تمرین',
+          isCompleted ? AppStrings.completed : AppStrings.startWorkout,
           style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
         ),
         style: ElevatedButton.styleFrom(
@@ -401,12 +402,12 @@ class _ExerciseListView extends ConsumerWidget {
             Icon(Icons.fitness_center, size: 48, color: Colors.grey.shade300),
             const SizedBox(height: 12),
             Text(
-              'هیچ تمرینی برای این روز ثبت نشده',
+              AppStrings.noExercisesForDay,
               style: TextStyle(color: Colors.grey.shade500, fontSize: 15),
             ),
             const SizedBox(height: 8),
             Text(
-              'با دکمه + تمرین اضافه کنید',
+              AppStrings.addExerciseHint,
               style: TextStyle(color: Colors.grey.shade400, fontSize: 13),
             ),
           ],
@@ -434,8 +435,8 @@ class _ExerciseTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final repsText = exercise.isTimeBased
-        ? '${exercise.repsOrDuration}ث'
-        : '${exercise.repsOrDuration} تکرار';
+        ? '${exercise.repsOrDuration}${AppStrings.second}'
+        : '${exercise.repsOrDuration} ${AppStrings.rep}';
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 10),

@@ -12,7 +12,12 @@ class WorkoutRepositoryImpl with ErrorHandlerMixin implements WorkoutRepository 
   static const String _boxName = 'app_data';
 
   Future<Box> _getBox() async {
-    return await Hive.openBox(_boxName);
+    try {
+      return await Hive.openBox(_boxName);
+    } catch (_) {
+      await Hive.deleteBoxFromDisk(_boxName);
+      return await Hive.openBox(_boxName);
+    }
   }
 
   @override

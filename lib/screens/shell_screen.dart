@@ -5,6 +5,7 @@ import 'package:exo/screens/workout_history_screen.dart';
 import 'package:exo/screens/plan_editor_screen.dart';
 import 'package:exo/screens/profile_screen.dart';
 import 'package:exo/core/theme/app_theme.dart';
+import 'package:exo/core/constants/app_strings.dart';
 
 final selectedTabProvider = StateProvider<int>((ref) => 0);
 
@@ -34,22 +35,22 @@ class ShellScreen extends ConsumerWidget {
           NavigationDestination(
             icon: Icon(Icons.dashboard_outlined),
             selectedIcon: Icon(Icons.dashboard),
-            label: 'داشبورد',
+            label: AppStrings.tabDashboard,
           ),
           NavigationDestination(
             icon: Icon(Icons.history_outlined),
             selectedIcon: Icon(Icons.history),
-            label: 'تاریخچه',
+            label: AppStrings.tabHistory,
           ),
           NavigationDestination(
             icon: Icon(Icons.edit_note_outlined),
             selectedIcon: Icon(Icons.edit_note),
-            label: 'ویرایشگر',
+            label: AppStrings.tabEditor,
           ),
           NavigationDestination(
             icon: Icon(Icons.person_outline),
             selectedIcon: Icon(Icons.person),
-            label: 'پروفایل',
+            label: AppStrings.tabProfile,
           ),
         ],
       ),

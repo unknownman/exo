@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:exo/models/workout_plan.dart';
 import 'package:exo/models/exercise.dart';
 import 'package:exo/providers/workout_provider.dart';
+import 'package:exo/core/constants/app_strings.dart';
 
 class PlanEditorScreen extends ConsumerStatefulWidget {
   const PlanEditorScreen({super.key});
@@ -18,22 +19,22 @@ class _PlanEditorScreenState extends ConsumerState<PlanEditorScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('ویرایش برنامه'),
+        title: const Text(AppStrings.editPlan),
         actions: [
           IconButton(
             icon: const Icon(Icons.add),
             onPressed: () => _showAddDayDialog(context),
-            tooltip: 'افزودن روز',
+            tooltip: AppStrings.addDay,
           ),
         ],
       ),
       body: stateAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(child: Text('خطا: $e')),
+        error: (e, _) => Center(child: Text('${AppStrings.errorWithMessage}$e')),
         data: (state) {
           final plan = state.plan;
           if (plan == null) {
-            return const Center(child: Text('برنامه‌ای وجود ندارد'));
+            return const Center(child: Text(AppStrings.noPlan));
           }
 
           return ListView(
@@ -44,7 +45,7 @@ class _PlanEditorScreenState extends ConsumerState<PlanEditorScreen> {
               _buildStatsRow(plan),
               const SizedBox(height: 24),
               const Text(
-                'روزهای تمرین',
+                AppStrings.workoutDays,
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 12),
@@ -89,20 +90,20 @@ class _PlanEditorScreenState extends ConsumerState<PlanEditorScreen> {
       children: [
         _StatCard(
           icon: Icons.calendar_today,
-          label: 'روزها',
+          label: AppStrings.days,
           value: '${plan.days.length}',
         ),
         const SizedBox(width: 12),
         _StatCard(
           icon: Icons.fitness_center,
-          label: 'تمرین‌ها',
+          label: AppStrings.exercises,
           value: '${plan.totalExercises}',
         ),
         const SizedBox(width: 12),
         _StatCard(
           icon: Icons.timer,
-          label: 'مدت',
-          value: '${plan.totalDurationMinutes} دقیقه',
+          label: AppStrings.duration,
+          value: '${plan.totalDurationMinutes} ${AppStrings.minutes}',
         ),
       ],
     );
@@ -113,18 +114,18 @@ class _PlanEditorScreenState extends ConsumerState<PlanEditorScreen> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('تغییر نام برنامه'),
+        title: const Text(AppStrings.renamePlan),
         content: TextField(
           controller: controller,
           decoration: const InputDecoration(
-            labelText: 'نام برنامه',
+            labelText: AppStrings.planNameInput,
             border: OutlineInputBorder(),
           ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('انصراف'),
+            child: const Text(AppStrings.dismiss),
           ),
           ElevatedButton(
             onPressed: () {
@@ -135,7 +136,7 @@ class _PlanEditorScreenState extends ConsumerState<PlanEditorScreen> {
               }
               Navigator.of(ctx).pop();
             },
-            child: const Text('ثبت'),
+            child: const Text(AppStrings.confirm),
           ),
         ],
       ),
@@ -147,11 +148,11 @@ class _PlanEditorScreenState extends ConsumerState<PlanEditorScreen> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('افزودن روز جدید'),
+        title: const Text(AppStrings.addNewDay),
         content: TextField(
           controller: controller,
           decoration: const InputDecoration(
-            labelText: 'نام روز',
+            labelText: AppStrings.dayNameInput,
             border: OutlineInputBorder(),
           ),
         ),
@@ -169,7 +170,7 @@ class _PlanEditorScreenState extends ConsumerState<PlanEditorScreen> {
               }
               Navigator.of(ctx).pop();
             },
-            child: const Text('افزودن'),
+                child: const Text(AppStrings.add),
           ),
         ],
       ),
@@ -298,7 +299,7 @@ class _DayCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      '${day.exercises.length} تمرین - ${day.totalSets} ست - ${day.estimatedDurationMinutes} دقیقه',
+                      '${day.exercises.length} ${AppStrings.exercises} - ${day.totalSets} ${AppStrings.set} - ${day.estimatedDurationMinutes} ${AppStrings.minutes}',
                       style: TextStyle(
                         color: Colors.grey.shade600,
                         fontSize: 13,
@@ -324,19 +325,19 @@ class _DayCard extends StatelessWidget {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('حذف روز'),
-        content: Text('آیا مطمئن هستید که "${day.name}" حذف شود؟'),
+        title: const Text(AppStrings.deleteDay),
+        content: Text(AppStrings.confirmDeleteDay.replaceFirst('%s', day.name)),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('انصراف'),
+            child: const Text(AppStrings.dismiss),
           ),
           ElevatedButton(
             onPressed: () {
               Navigator.of(ctx).pop();
               onDelete!();
             },
-            child: const Text('حذف'),
+            child: const Text(AppStrings.delete),
           ),
         ],
       ),
@@ -366,11 +367,11 @@ class _DayDetailScreenState extends ConsumerState<DayDetailScreen> {
       ),
       body: stateAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(child: Text('خطا: $e')),
+        error: (e, _) => Center(child: Text('${AppStrings.errorWithMessage}$e')),
         data: (state) {
           final day = state.getDayById(widget.dayId);
           if (day == null) {
-            return const Center(child: Text('روز یافت نشد'));
+            return const Center(child: Text(AppStrings.dayDetails));
           }
 
           if (day.exercises.isEmpty) {
@@ -385,14 +386,14 @@ class _DayDetailScreenState extends ConsumerState<DayDetailScreen> {
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    'هنوز تمرینی اضافه نشده',
+                    AppStrings.noExercisesAdded,
                     style: TextStyle(fontSize: 18, color: Colors.grey.shade600),
                   ),
                   const SizedBox(height: 24),
                   ElevatedButton.icon(
                     onPressed: () => _showAddExerciseSheet(context),
                     icon: const Icon(Icons.add),
-                    label: const Text('افزودن تمرین'),
+                    label: const Text(AppStrings.addExercise),
                   ),
                 ],
               ),
@@ -425,7 +426,7 @@ class _DayDetailScreenState extends ConsumerState<DayDetailScreen> {
 
   String _getDayName(AsyncValue<WorkoutPlanState> stateAsync) {
     return stateAsync.valueOrNull?.getDayById(widget.dayId)?.name ??
-        'جزئیات روز';
+        AppStrings.dayDetails;
   }
 
   void _showAddExerciseSheet(BuildContext context) {
@@ -485,7 +486,7 @@ class _ExerciseCard extends StatelessWidget {
           style: const TextStyle(fontWeight: FontWeight.bold),
         ),
         subtitle: Text(
-          '${exercise.sets} ست × ${exercise.repsOrDuration} ${exercise.isTimeBased ? 'ثانیه' : 'تکرار'}',
+          '${exercise.sets} ${AppStrings.set} × ${exercise.repsOrDuration} ${exercise.isTimeBased ? AppStrings.second : AppStrings.rep}',
         ),
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
@@ -517,7 +518,7 @@ class _AddExerciseSheetState extends ConsumerState<_AddExerciseSheet> {
   final _setsController = TextEditingController(text: '3');
   final _repsController = TextEditingController(text: '12');
   final _restController = TextEditingController(text: '60');
-  String _equipment = 'بدون تجهیزات';
+  String _equipment = AppStrings.noEquipment;
   bool _isTimeBased = false;
 
   @override
@@ -549,7 +550,7 @@ class _AddExerciseSheetState extends ConsumerState<_AddExerciseSheet> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   const Text(
-                    'افزودن تمرین',
+                    AppStrings.addExercise,
                     style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                   ),
                   IconButton(
@@ -562,11 +563,11 @@ class _AddExerciseSheetState extends ConsumerState<_AddExerciseSheet> {
               TextFormField(
                 controller: _nameController,
                 decoration: const InputDecoration(
-                  labelText: 'نام تمرین',
+                  labelText: AppStrings.exerciseNameInput,
                   border: OutlineInputBorder(),
                 ),
                 validator: (v) =>
-                    v?.trim().isEmpty == true ? 'نام تمرین الزامی است' : null,
+                    v?.trim().isEmpty == true ? AppStrings.exerciseNameRequired : null,
               ),
               const SizedBox(height: 12),
               Row(
@@ -575,12 +576,12 @@ class _AddExerciseSheetState extends ConsumerState<_AddExerciseSheet> {
                     child: TextFormField(
                       controller: _setsController,
                       decoration: const InputDecoration(
-                        labelText: 'تعداد ست',
+                        labelText: AppStrings.numberOfSets,
                         border: OutlineInputBorder(),
                       ),
                       keyboardType: TextInputType.number,
                       validator: (v) =>
-                          int.tryParse(v ?? '') != null ? null : 'عدد معتبر',
+                          int.tryParse(v ?? '') != null ? null : AppStrings.validNumber,
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -588,12 +589,12 @@ class _AddExerciseSheetState extends ConsumerState<_AddExerciseSheet> {
                     child: TextFormField(
                       controller: _repsController,
                       decoration: InputDecoration(
-                        labelText: _isTimeBased ? 'ثانیه' : 'تکرار',
+                        labelText: _isTimeBased ? AppStrings.second : AppStrings.rep,
                         border: const OutlineInputBorder(),
                       ),
                       keyboardType: TextInputType.number,
                       validator: (v) =>
-                          int.tryParse(v ?? '') != null ? null : 'عدد معتبر',
+                          int.tryParse(v ?? '') != null ? null : AppStrings.validNumber,
                     ),
                   ),
                 ],
@@ -602,7 +603,7 @@ class _AddExerciseSheetState extends ConsumerState<_AddExerciseSheet> {
               TextFormField(
                 controller: _restController,
                 decoration: const InputDecoration(
-                  labelText: 'زمان استراحت (ثانیه)',
+                  labelText: AppStrings.restTimeSeconds,
                   border: OutlineInputBorder(),
                 ),
                 keyboardType: TextInputType.number,
@@ -611,13 +612,13 @@ class _AddExerciseSheetState extends ConsumerState<_AddExerciseSheet> {
               DropdownButtonFormField<String>(
                 initialValue: _equipment,
                 decoration: const InputDecoration(
-                  labelText: 'تجهیزات',
+                  labelText: AppStrings.equipment,
                   border: OutlineInputBorder(),
                 ),
                 items: const [
                   DropdownMenuItem(
-                    value: 'بدون تجهیزات',
-                    child: Text('بدون تجهیزات'),
+                    value: AppStrings.noEquipment,
+                    child: Text(AppStrings.noEquipment),
                   ),
                   DropdownMenuItem(value: 'دمبل', child: Text('دمبل')),
                   DropdownMenuItem(value: 'هالتر', child: Text('هالتر')),
@@ -626,11 +627,11 @@ class _AddExerciseSheetState extends ConsumerState<_AddExerciseSheet> {
                   DropdownMenuItem(value: 'کش ورزشی', child: Text('کش ورزشی')),
                 ],
                 onChanged: (v) =>
-                    setState(() => _equipment = v ?? 'بدون تجهیزات'),
+                    setState(() => _equipment = v ?? AppStrings.noEquipment),
               ),
               const SizedBox(height: 12),
               SwitchListTile(
-                title: Text(_isTimeBased ? 'زمانی' : 'تکراری'),
+                title: Text(_isTimeBased ? AppStrings.timed : AppStrings.repBased),
                 value: _isTimeBased,
                 onChanged: (v) => setState(() => _isTimeBased = v),
               ),
@@ -640,7 +641,7 @@ class _AddExerciseSheetState extends ConsumerState<_AddExerciseSheet> {
                 style: ElevatedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 16),
                 ),
-                child: const Text('افزودن'),
+            child: const Text(AppStrings.add),
               ),
               const SizedBox(height: 16),
             ],

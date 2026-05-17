@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:exo/providers/music_provider.dart';
 import 'package:exo/core/theme/app_theme.dart';
+import 'package:exo/core/constants/app_strings.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key});
@@ -18,7 +19,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     return Directionality(
       textDirection: TextDirection.rtl,
       child: Scaffold(
-        appBar: AppBar(title: const Text('پروفایل')),
+        appBar: AppBar(title: const Text(AppStrings.profileTitle)),
         body: ListView(
           padding: const EdgeInsets.all(16),
           children: [
@@ -44,7 +45,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 const Icon(Icons.music_note, color: AppTheme.tealPrimary),
                 const SizedBox(width: 8),
                 const Text(
-                  'موزیک پس‌زمینه تمرین',
+                  AppStrings.backgroundMusic,
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
@@ -92,7 +93,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               onPressed: () => provider.pickBackgroundMusic(),
               icon: const Icon(Icons.music_note_outlined),
               label: Text(
-                trackName != null ? 'تغییر موزیک' : 'انتخاب موزیک',
+                trackName != null ? AppStrings.changeMusic : AppStrings.selectMusic,
               ),
               style: OutlinedButton.styleFrom(
                 minimumSize: const Size(double.infinity, 48),
@@ -103,7 +104,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             ),
             const SizedBox(height: 8),
             Text(
-              'پشتیبانی از: MP3, AAC, WAV, OGG, M4A',
+              AppStrings.supportedAudioFormats,
               style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
             ),
           ],

@@ -21,16 +21,13 @@ class ExoApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Directionality(
-      textDirection: TextDirection.rtl,
-      child: MaterialApp(
-        debugShowCheckedModeBanner: false,
-        title: 'برنامه تمرینی ۳ روزه',
-        locale: const Locale('fa', 'IR'),
-        theme: AppTheme.lightTheme,
-        darkTheme: AppTheme.darkTheme,
-        home: const ShellScreen(),
-      ),
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      title: 'برنامه تمرینی ۳ روزه',
+      locale: const Locale('fa', 'IR'),
+      theme: AppTheme.lightTheme,
+      darkTheme: AppTheme.darkTheme,
+      home: const ShellScreen(),
     );
   }
 }

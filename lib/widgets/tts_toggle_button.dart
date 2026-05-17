@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:exo/providers/tts_provider.dart';
+import 'package:exo/core/constants/app_strings.dart';
 
 class TTSToggleButton extends ConsumerWidget {
   const TTSToggleButton({super.key});
@@ -22,14 +23,14 @@ class TTSToggleButton extends ConsumerWidget {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
-                isEnabled ? 'دستیار صوتی غیرفعال شد' : 'دستیار صوتی فعال شد',
+                isEnabled ? AppStrings.ttsDisabled : AppStrings.ttsEnabled,
               ),
               duration: const Duration(seconds: 1),
               behavior: SnackBarBehavior.floating,
             ),
           );
         },
-        tooltip: isEnabled ? 'صدا فعال' : 'صدا غیرفعال',
+        tooltip: isEnabled ? AppStrings.soundEnabled : AppStrings.soundDisabled,
       ),
     );
   }
