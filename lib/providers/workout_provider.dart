@@ -1,14 +1,16 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../models/exercise.dart';
-import '../models/exercise_media.dart';
 import '../models/workout_plan.dart';
 import '../models/workout_log.dart';
 import '../data/repositories/workout_repository_impl.dart';
-import '../core/utils/id_generator.dart';
+import '../data/datasources/workout_defaults.dart';
+import '../domain/services/workout_state_manager.dart';
 part 'workout_provider.g.dart';
 
 @Riverpod(keepAlive: true)
 class WorkoutNotifier extends _$WorkoutNotifier {
+  final _manager = WorkoutStateManager();
+
   @override
   Future<WorkoutPlanState> build() async {
     return _loadInitialData();
@@ -49,7 +51,7 @@ class WorkoutNotifier extends _$WorkoutNotifier {
     String? activePlanId;
 
     if (finalPlans.isEmpty) {
-      final defaultPlan = _createDefaultPlan();
+      final defaultPlan = WorkoutDefaults.defaultPlan();
       finalPlans = [defaultPlan];
       activePlanId = defaultPlan.id;
     } else {
@@ -73,259 +75,6 @@ class WorkoutNotifier extends _$WorkoutNotifier {
     );
   }
 
-  WorkoutPlanState _createDefaultState() {
-    final defaultPlan = _createDefaultPlan();
-    return WorkoutPlanState(
-      plans: [defaultPlan],
-      activePlanId: defaultPlan.id,
-      currentDayIndex: 0,
-      isLoading: false,
-      errorMessage: null,
-    );
-  }
-
-  List<Exercise> _warmupExercises() {
-    return [
-      Exercise(
-        id: 'ex_warm_1',
-        name: 'رول کف پا',
-        sets: 1,
-        repsOrDuration: 180,
-        isTimeBased: true,
-        restTime: 15,
-        equipment: 'وزن بدن',
-      ),
-      Exercise(
-        id: 'ex_warm_2',
-        name: 'Monster Walk با مینی‌لوپ',
-        sets: 3,
-        repsOrDuration: 30,
-        isTimeBased: false,
-        restTime: 45,
-        equipment: 'کش ورزشی',
-        description: 'فعال‌سازی لگن',
-      ),
-      Exercise(
-        id: 'ex_warm_3',
-        name: 'Cat-Cow',
-        sets: 1,
-        repsOrDuration: 120,
-        isTimeBased: true,
-        restTime: 15,
-        equipment: 'وزن بدن',
-        description: 'متحرک‌سازی ستون فقرات',
-      ),
-      Exercise(
-        id: 'ex_warm_4',
-        name: 'Clamshell با مینی‌لوپ',
-        sets: 2,
-        repsOrDuration: 30,
-        isTimeBased: false,
-        restTime: 45,
-        equipment: 'کش ورزشی',
-        description: 'ثبات زانو',
-      ),
-    ];
-  }
-
-  WorkoutPlan _createDefaultPlan() {
-    return WorkoutPlan(
-      id: 'exo_pro',
-      name: 'برنامه تخصصی ۳ روزه',
-      description: 'برنامه‌ای ترکیبی برای قدرت پا، هایپرتروفی شانه و قدرت مرکزی با تمرکز بر اصلاح ساختار و پیشگیری از آسیب',
-      days: [_createDay1(), _createDay2(), _createDay3()],
-      createdAt: DateTime.now(),
-      isActive: true,
-    );
-  }
-
-  WorkoutDay _createDay1() {
-    return WorkoutDay(
-      id: 'exo_pro_day_1',
-      name: 'قدرت پا و ثبات زنجیره خلفی',
-      orderIndex: 0,
-      exercises: [
-        ..._warmupExercises(),
-        Exercise(
-          id: 'ex_d1_1',
-          name: 'اسکات گابلت (۱۷.۵ ک‌گ)',
-          sets: 4,
-          repsOrDuration: 12,
-          isTimeBased: false,
-          restTime: 75,
-          equipment: 'دمبل',
-          description: 'تمرکز: VMO',
-        ),
-        Exercise(
-          id: 'ex_d1_2',
-          name: 'ددلیفت تک پا (۱۰ ک‌گ)',
-          sets: 4,
-          repsOrDuration: 12,
-          isTimeBased: false,
-          restTime: 75,
-          equipment: 'دمبل',
-          description: 'تمرکز: همسترینگ و مچ پا',
-        ),
-        Exercise(
-          id: 'ex_d1_3',
-          name: 'لانژ معکوس (۸ ک‌گ)',
-          sets: 3,
-          repsOrDuration: 15,
-          isTimeBased: false,
-          restTime: 60,
-          equipment: 'دمبل',
-          description: 'تمرکز: ثبات زانو',
-        ),
-        Exercise(
-          id: 'ex_d1_4',
-          name: 'پل باسن با مینی‌لوپ',
-          sets: 3,
-          repsOrDuration: 20,
-          isTimeBased: false,
-          restTime: 60,
-          equipment: 'کش ورزشی',
-          description: 'تمرکز: گلوتئوس ماکسیموس',
-        ),
-        Exercise(
-          id: 'ex_d1_5',
-          name: 'ساق پا ایستاده با دمبل',
-          sets: 3,
-          repsOrDuration: 20,
-          isTimeBased: false,
-          restTime: 45,
-          equipment: 'دمبل',
-          description: 'تقویت عضلات مچ پا',
-        ),
-      ],
-      isUnlocked: true,
-      isCompleted: false,
-    );
-  }
-
-  WorkoutDay _createDay2() {
-    return WorkoutDay(
-      id: 'exo_pro_day_2',
-      name: 'هایپرتروفی شانه و اصلاح قوز',
-      orderIndex: 1,
-      exercises: [
-        ..._warmupExercises(),
-        Exercise(
-          id: 'ex_d2_1',
-          name: 'پرس سرشانه نشسته (۱۷.۵ ک‌گ)',
-          sets: 4,
-          repsOrDuration: 10,
-          isTimeBased: false,
-          restTime: 75,
-          equipment: 'دمبل',
-          description: 'قدرتی',
-        ),
-        Exercise(
-          id: 'ex_d2_2',
-          name: 'نشر جانب دمبل (۵ ک‌گ)',
-          sets: 4,
-          repsOrDuration: 15,
-          isTimeBased: false,
-          restTime: 60,
-          equipment: 'دمبل',
-          description: 'هایپرتروفی دلتوئید میانی',
-        ),
-        Exercise(
-          id: 'ex_d2_3',
-          name: 'نشر خم دمبل (۸ ک‌گ)',
-          sets: 4,
-          repsOrDuration: 15,
-          isTimeBased: false,
-          restTime: 60,
-          equipment: 'دمبل',
-          description: 'اصلاح قوز - دلتوئید خلفی',
-        ),
-        Exercise(
-          id: 'ex_d2_4',
-          name: 'فیس‌پول با مینی‌لوپ',
-          sets: 4,
-          repsOrDuration: 20,
-          isTimeBased: false,
-          restTime: 45,
-          equipment: 'کش ورزشی',
-          description: 'اصلاح وضعیت گردن',
-        ),
-        Exercise(
-          id: 'ex_d2_5',
-          name: 'شنا سوئدی',
-          sets: 3,
-          repsOrDuration: 15,
-          isTimeBased: false,
-          restTime: 60,
-          equipment: 'وزن بدن',
-          description: 'تقویت سینه و ثبات کتف',
-        ),
-      ],
-      isUnlocked: true,
-      isCompleted: false,
-    );
-  }
-
-  WorkoutDay _createDay3() {
-    return WorkoutDay(
-      id: 'exo_pro_day_3',
-      name: 'قدرت مرکزی و اصلاح لگن',
-      orderIndex: 2,
-      exercises: [
-        ..._warmupExercises(),
-        Exercise(
-          id: 'ex_d3_1',
-          name: 'اسکات سومو (۱۷.۵ ک‌گ)',
-          sets: 4,
-          repsOrDuration: 15,
-          isTimeBased: false,
-          restTime: 75,
-          equipment: 'دمبل',
-          description: 'تمرکز: آداکتورها/داخل ران',
-        ),
-        Exercise(
-          id: 'ex_d3_2',
-          name: 'پلانک شکم',
-          sets: 4,
-          repsOrDuration: 60,
-          isTimeBased: true,
-          restTime: 45,
-          equipment: 'وزن بدن',
-        ),
-        Exercise(
-          id: 'ex_d3_3',
-          name: 'پلانک پهلو',
-          sets: 3,
-          repsOrDuration: 45,
-          isTimeBased: true,
-          restTime: 45,
-          equipment: 'وزن بدن',
-        ),
-        Exercise(
-          id: 'ex_d3_4',
-          name: 'ددباگ (Dead Bug)',
-          sets: 3,
-          repsOrDuration: 16,
-          isTimeBased: false,
-          restTime: 45,
-          equipment: 'وزن بدن',
-          description: 'اصلاح کمر و لگن',
-        ),
-        Exercise(
-          id: 'ex_d3_5',
-          name: 'پارویی دمبل تک‌دست (۱۷.۵ ک‌گ)',
-          sets: 4,
-          repsOrDuration: 12,
-          isTimeBased: false,
-          restTime: 75,
-          equipment: 'دمبل',
-          description: 'اصلاح تقارن کمر',
-        ),
-      ],
-      isUnlocked: true,
-      isCompleted: false,
-    );
-  }
-
   Future<void> _saveData() async {
     final currentState = state.valueOrNull;
     if (currentState == null || currentState.plans.isEmpty) return;
@@ -342,8 +91,9 @@ class WorkoutNotifier extends _$WorkoutNotifier {
     final currentState = state.valueOrNull;
     if (currentState == null) return;
 
+    final planWithTimestamp = updatedPlan.copyWith(updatedAt: DateTime.now());
     final updatedPlans = currentState.plans.map((p) {
-      return p.id == updatedPlan.id ? updatedPlan : p;
+      return p.id == planWithTimestamp.id ? planWithTimestamp : p;
     }).toList();
 
     state = AsyncData(
@@ -356,18 +106,7 @@ class WorkoutNotifier extends _$WorkoutNotifier {
     final currentState = state.valueOrNull;
     if (currentState == null || currentState.plan == null) return;
 
-    final updatedDays = currentState.plan!.days.map((day) {
-      if (day.id == dayId) {
-        return day.addExercise(exercise);
-      }
-      return day;
-    }).toList();
-
-    final updatedPlan = currentState.plan!.copyWith(
-      days: updatedDays,
-      updatedAt: DateTime.now(),
-    );
-
+    final updatedPlan = _manager.addExerciseToDay(currentState.plan!, dayId, exercise);
     await _updateCurrentPlan(updatedPlan);
   }
 
@@ -375,21 +114,7 @@ class WorkoutNotifier extends _$WorkoutNotifier {
     final currentState = state.valueOrNull;
     if (currentState == null || currentState.plan == null) return;
 
-    final updatedDays = currentState.plan!.days.map((day) {
-      if (day.id == dayId) {
-        final updatedExercises = day.exercises.map((ex) {
-          return ex.id == exerciseId ? updatedExercise : ex;
-        }).toList();
-        return day.copyWith(exercises: updatedExercises);
-      }
-      return day;
-    }).toList();
-
-    final updatedPlan = currentState.plan!.copyWith(
-      days: updatedDays,
-      updatedAt: DateTime.now(),
-    );
-
+    final updatedPlan = _manager.updateExerciseInDay(currentState.plan!, dayId, exerciseId, updatedExercise);
     await _updateCurrentPlan(updatedPlan);
   }
 
@@ -397,18 +122,7 @@ class WorkoutNotifier extends _$WorkoutNotifier {
     final currentState = state.valueOrNull;
     if (currentState == null || currentState.plan == null) return;
 
-    final updatedDays = currentState.plan!.days.map((day) {
-      if (day.id == dayId) {
-        return day.removeExercise(exerciseId);
-      }
-      return day;
-    }).toList();
-
-    final updatedPlan = currentState.plan!.copyWith(
-      days: updatedDays,
-      updatedAt: DateTime.now(),
-    );
-
+    final updatedPlan = _manager.removeExerciseFromDay(currentState.plan!, dayId, exerciseId);
     await _updateCurrentPlan(updatedPlan);
   }
 
@@ -422,44 +136,15 @@ class WorkoutNotifier extends _$WorkoutNotifier {
     final day = currentState.plan!.days[dayIndex];
     if (day.isCompleted) return;
 
-    // Build updated days list
-    final updatedDays = [...currentState.plan!.days];
-    updatedDays[dayIndex] = day.copyWith(
-      isCompleted: true,
-      completedAt: DateTime.now(),
-    );
+    final updatedPlan = _manager.markDayCompleted(currentState.plan!, dayId);
+    final log = _manager.createWorkoutLog(day);
+    final nextDayIndex = _manager.calculateNextDayIndex(updatedPlan.days, dayIndex);
 
-    final updatedPlan = currentState.plan!.copyWith(
-      days: updatedDays,
-      updatedAt: DateTime.now(),
-    );
-
-    // Determine next day: don't wrap to 0 if all days are done
-    final allCompleted = updatedDays.every((d) => d.isCompleted);
-    final nextDayIndex = allCompleted
-        ? dayIndex
-        : (dayIndex + 1) % updatedDays.length;
-
-    // Build log entry inline to avoid intermediate state mutations
-    final log = WorkoutLog(
-      id: IdGenerator.generate(),
-      dayId: day.id,
-      dayName: day.name,
-      completedAt: DateTime.now(),
-      exerciseCount: day.exercises.length,
-      totalSets: day.exercises.fold(0, (sum, e) => sum + e.sets),
-      totalDurationMinutes: day.estimatedDurationMinutes,
-      hasMedia: day.exercises.any(
-        (e) => e.media.type != ExerciseMediaType.none,
-      ),
-    );
-
-    // Build updated plans list
+    final planWithTimestamp = updatedPlan.copyWith(updatedAt: DateTime.now());
     final updatedPlans = currentState.plans.map((p) {
-      return p.id == updatedPlan.id ? updatedPlan : p;
+      return p.id == planWithTimestamp.id ? planWithTimestamp : p;
     }).toList();
 
-    // Single atomic state update
     state = AsyncData(
       currentState.copyWith(
         plans: updatedPlans,
@@ -500,20 +185,9 @@ class WorkoutNotifier extends _$WorkoutNotifier {
     final currentState = state.valueOrNull;
     if (currentState == null || currentState.plan == null) return;
 
-    final resetDays = currentState.plan!.days.map((day) {
-      return day.copyWith(
-        isCompleted: false,
-        clearCompletedAt: true,
-      );
-    }).toList();
-
-    final updatedPlan = currentState.plan!.copyWith(
-      days: resetDays,
-      updatedAt: DateTime.now(),
-    );
-
+    final updatedPlan = _manager.resetDayCompletion(currentState.plan!);
     await _updateCurrentPlan(updatedPlan);
-    // Re-read fresh state after _updateCurrentPlan mutated it
+
     final fresh = state.valueOrNull;
     if (fresh != null) {
       state = AsyncData(fresh.copyWith(currentDayIndex: 0));
@@ -524,7 +198,14 @@ class WorkoutNotifier extends _$WorkoutNotifier {
   Future<void> resetEverything() async {
     final repository = ref.read(workoutRepositoryProvider);
     await repository.clearAll();
-    state = AsyncData(_createDefaultState());
+    final defaultPlan = WorkoutDefaults.defaultPlan();
+    state = AsyncData(WorkoutPlanState(
+      plans: [defaultPlan],
+      activePlanId: defaultPlan.id,
+      currentDayIndex: 0,
+      isLoading: false,
+      errorMessage: null,
+    ));
     await _saveData();
   }
 
@@ -532,22 +213,7 @@ class WorkoutNotifier extends _$WorkoutNotifier {
     final currentState = state.valueOrNull;
     if (currentState == null || currentState.plan == null) return;
 
-    final newDayId = IdGenerator.generate();
-    final newDay = WorkoutDay(
-      id: newDayId,
-      name: dayName,
-      orderIndex: currentState.plan!.days.length,
-      exercises: [],
-      isUnlocked: true,
-      isCompleted: false,
-    );
-
-    final updatedDays = [...currentState.plan!.days, newDay];
-    final updatedPlan = currentState.plan!.copyWith(
-      days: updatedDays,
-      updatedAt: DateTime.now(),
-    );
-
+    final updatedPlan = _manager.addDayToPlan(currentState.plan!, dayName);
     await _updateCurrentPlan(updatedPlan);
   }
 
@@ -556,29 +222,16 @@ class WorkoutNotifier extends _$WorkoutNotifier {
     if (currentState == null || currentState.plan == null) return;
     if (currentState.plan!.days.length <= 1) return;
 
-    final updatedDays = currentState.plan!.days
-        .where((d) => d.id != dayId)
-        .toList();
-
-    for (int i = 0; i < updatedDays.length; i++) {
-      updatedDays[i] = updatedDays[i].copyWith(orderIndex: i);
-    }
-
-    final updatedPlan = currentState.plan!.copyWith(
-      days: updatedDays,
-      updatedAt: DateTime.now(),
-    );
-
-    int newCurrentIndex = currentState.currentDayIndex;
-    if (newCurrentIndex >= updatedDays.length) {
-      newCurrentIndex = updatedDays.length - 1;
-    }
-
+    final updatedPlan = _manager.removeDayFromPlan(currentState.plan!, dayId);
     await _updateCurrentPlan(updatedPlan);
-    // Re-read fresh state after _updateCurrentPlan mutated it
+
     final fresh = state.valueOrNull;
     if (fresh != null) {
-      state = AsyncData(fresh.copyWith(currentDayIndex: newCurrentIndex));
+      int newIndex = fresh.currentDayIndex;
+      if (newIndex >= fresh.plan!.days.length) {
+        newIndex = fresh.plan!.days.length - 1;
+      }
+      state = AsyncData(fresh.copyWith(currentDayIndex: newIndex));
       await _saveData();
     }
   }
@@ -587,11 +240,7 @@ class WorkoutNotifier extends _$WorkoutNotifier {
     final currentState = state.valueOrNull;
     if (currentState == null || currentState.plan == null) return;
 
-    final updatedPlan = currentState.plan!.copyWith(
-      name: name,
-      updatedAt: DateTime.now(),
-    );
-
+    final updatedPlan = currentState.plan!.copyWith(name: name);
     await _updateCurrentPlan(updatedPlan);
   }
 
@@ -608,17 +257,11 @@ class WorkoutNotifier extends _$WorkoutNotifier {
     final currentState = state.valueOrNull;
     if (currentState == null) return;
 
-    final log = WorkoutLog(
-      id: IdGenerator.generate(),
+    final log = _manager.createWorkoutLogFromData(
       dayId: dayId,
       dayName: dayName,
-      completedAt: DateTime.now(),
-      exerciseCount: exercises.length,
-      totalSets: exercises.fold(0, (sum, e) => sum + e.sets),
-      totalDurationMinutes: durationMinutes,
-      hasMedia: exercises.any(
-        (e) => e.media.type != ExerciseMediaType.none,
-      ),
+      exercises: exercises,
+      durationMinutes: durationMinutes,
     );
 
     final updatedLogs = [log, ...currentState.workoutLogs];
@@ -647,36 +290,10 @@ class WorkoutNotifier extends _$WorkoutNotifier {
     if (currentState == null) return;
 
     final days = dayNames != null
-        ? List.generate(
-            dayNames.length,
-            (i) => WorkoutDay(
-              id: IdGenerator.generate(),
-              name: dayNames[i],
-              orderIndex: i,
-              exercises: [],
-              isUnlocked: true,
-              isCompleted: false,
-            ),
-          )
-        : [
-            WorkoutDay(
-              id: IdGenerator.generate(),
-              name: 'روز اول',
-              orderIndex: 0,
-              exercises: [],
-              isUnlocked: true,
-              isCompleted: false,
-            ),
-          ];
+        ? _manager.createDayList(dayNames)
+        : [_manager.createSingleDay('روز اول')];
 
-    final newPlan = WorkoutPlan(
-      id: IdGenerator.generate(),
-      name: name,
-      description: 'برنامه جدید',
-      days: days,
-      createdAt: DateTime.now(),
-      isActive: true,
-    );
+    final newPlan = _manager.buildPlan(name, 'برنامه جدید', days);
 
     final updatedPlans = [...currentState.plans, newPlan];
     state = AsyncData(
@@ -791,6 +408,10 @@ class WorkoutPlanState {
     return plan?.days.where((d) => d.isCompleted).length ?? 0;
   }
 
+  int get todayCompletedDaysCount {
+    return plan?.days.where((d) => d.isCompletedToday).length ?? 0;
+  }
+
   int get totalDays {
     return plan?.days.length ?? 0;
   }
@@ -798,7 +419,7 @@ class WorkoutPlanState {
   bool get allDaysCompleted {
     final currentPlan = plan;
     if (currentPlan == null || currentPlan.days.isEmpty) return false;
-    return completedDaysCount == totalDays;
+    return todayCompletedDaysCount == totalDays;
   }
 
   WorkoutDay? getDayById(String dayId) {

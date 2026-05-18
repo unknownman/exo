@@ -105,6 +105,14 @@ class WorkoutDay {
     this.completedAt,
   });
 
+  bool get isCompletedToday {
+    if (!isCompleted || completedAt == null) return false;
+    final now = DateTime.now();
+    return completedAt!.year == now.year &&
+        completedAt!.month == now.month &&
+        completedAt!.day == now.day;
+  }
+
   int get totalSets => exercises.fold(0, (sum, e) => sum + e.sets);
 
   int get estimatedDurationMinutes {

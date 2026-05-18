@@ -199,7 +199,7 @@ class _DayNavigationBar extends ConsumerWidget {
       workoutNotifierProvider.select((s) => s.valueOrNull?.plan?.days ?? <WorkoutDay>[]),
     );
     final isCompleted = days.isNotEmpty && currentIndex < days.length
-        ? days[currentIndex].isCompleted
+        ? days[currentIndex].isCompletedToday
         : false;
     final totalDays = days.length;
     final currentDayName = currentIndex < days.length && days.isNotEmpty
@@ -354,34 +354,30 @@ class _StartWorkoutButton extends ConsumerWidget {
     );
     if (currentDay == null) return const SizedBox.shrink();
 
-    final isCompleted = currentDay.isCompleted;
+    final isCompleted = currentDay.isCompletedToday;
 
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
       child: ElevatedButton.icon(
-        onPressed: isCompleted
-            ? null
-            : () => Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (_) => ActiveWorkoutScreen(dayId: currentDay.id),
-                  ),
-                ),
-        icon: Icon(isCompleted ? Icons.check_circle : Icons.play_arrow),
+        onPressed: () => Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => ActiveWorkoutScreen(dayId: currentDay.id),
+          ),
+        ),
+        icon: Icon(isCompleted ? Icons.replay : Icons.play_arrow),
         label: Text(
-          isCompleted ? AppStrings.completed : AppStrings.startWorkout,
+          isCompleted ? 'شروع مجدد' : AppStrings.startWorkout,
           style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
         ),
         style: ElevatedButton.styleFrom(
-          backgroundColor: isCompleted ? Colors.grey.shade300 : AppTheme.tealPrimary,
+          backgroundColor: AppTheme.tealPrimary,
           foregroundColor: Colors.white,
-          disabledBackgroundColor: Colors.grey.shade300,
-          disabledForegroundColor: Colors.grey.shade500,
           padding: const EdgeInsets.symmetric(vertical: 14),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(14),
           ),
-          elevation: isCompleted ? 0 : 2,
+          elevation: 2,
         ),
       ),
     );
