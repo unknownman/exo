@@ -10,6 +10,7 @@ import 'package:exo/providers/workout_provider.dart';
 import 'package:exo/widgets/exercise_media_widget.dart';
 import 'package:exo/core/constants/app_strings.dart';
 import 'package:exo/core/utils/persian_digits.dart';
+import 'package:exo/core/utils/id_generator.dart';
 
 class PlanEditorScreen extends ConsumerStatefulWidget {
   const PlanEditorScreen({super.key});
@@ -876,7 +877,7 @@ class _AddExerciseSheetState extends ConsumerState<_AddExerciseSheet> {
 
     final ex = widget.existingExercise;
     final exercise = Exercise(
-      id: ex?.id ?? 'ex_${DateTime.now().millisecondsSinceEpoch}',
+      id: ex?.id ?? IdGenerator.generate(),
       name: _nameController.text.trim(),
       description: _descriptionController.text.trim(),
       coachCues: _coachCuesController.text.trim(),

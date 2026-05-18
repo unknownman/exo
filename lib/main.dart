@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:exo/screens/shell_screen.dart';
 import 'package:exo/core/theme/app_theme.dart';
 import 'package:exo/core/constants/app_constants.dart';
+import 'package:exo/core/constants/app_strings.dart';
 import 'package:exo/core/hive/adapters.dart';
 import 'package:exo/providers/storage_providers.dart';
 
@@ -51,10 +53,24 @@ class ExoApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'برنامه تمرینی ۳ روزه',
+      title: AppStrings.appName,
       locale: const Locale('fa', 'IR'),
+      localizationsDelegates: const [
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: const [
+        Locale('fa', 'IR'),
+      ],
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
+      builder: (context, child) {
+        return Directionality(
+          textDirection: TextDirection.rtl,
+          child: child!,
+        );
+      },
       home: const ShellScreen(),
     );
   }

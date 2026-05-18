@@ -10,6 +10,7 @@ import 'package:exo/providers/workout_provider.dart';
 import 'package:exo/core/constants/app_constants.dart';
 import 'package:exo/widgets/exercise_media_widget.dart';
 import 'package:exo/core/constants/app_strings.dart';
+import 'package:exo/core/utils/id_generator.dart';
 
 class AddExerciseScreen extends ConsumerStatefulWidget {
   const AddExerciseScreen({super.key});
@@ -192,7 +193,7 @@ class _AddExerciseScreenState extends ConsumerState<AddExerciseScreen> {
         int.tryParse(_restTimeController.text) ?? AppConstants.defaultRest;
 
     final exercise = Exercise(
-      id: 'ex_${DateTime.now().millisecondsSinceEpoch}',
+      id: IdGenerator.generate(),
       name: _nameController.text.trim(),
       description: _descriptionController.text.trim(),
       coachCues: _coachCuesController.text.trim(),

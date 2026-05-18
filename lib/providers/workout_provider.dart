@@ -4,6 +4,7 @@ import '../models/exercise_media.dart';
 import '../models/workout_plan.dart';
 import '../models/workout_log.dart';
 import '../data/repositories/workout_repository_impl.dart';
+import '../core/utils/id_generator.dart';
 part 'workout_provider.g.dart';
 
 @Riverpod(keepAlive: true)
@@ -441,7 +442,7 @@ class WorkoutNotifier extends _$WorkoutNotifier {
 
     // Build log entry inline to avoid intermediate state mutations
     final log = WorkoutLog(
-      id: 'log_${DateTime.now().millisecondsSinceEpoch}',
+      id: IdGenerator.generate(),
       dayId: day.id,
       dayName: day.name,
       completedAt: DateTime.now(),
@@ -531,8 +532,7 @@ class WorkoutNotifier extends _$WorkoutNotifier {
     final currentState = state.valueOrNull;
     if (currentState == null || currentState.plan == null) return;
 
-    final newDayId =
-        'day_${currentState.plan!.days.length + 1}_${DateTime.now().millisecondsSinceEpoch}';
+    final newDayId = IdGenerator.generate();
     final newDay = WorkoutDay(
       id: newDayId,
       name: dayName,
@@ -609,7 +609,7 @@ class WorkoutNotifier extends _$WorkoutNotifier {
     if (currentState == null) return;
 
     final log = WorkoutLog(
-      id: 'log_${DateTime.now().millisecondsSinceEpoch}',
+      id: IdGenerator.generate(),
       dayId: dayId,
       dayName: dayName,
       completedAt: DateTime.now(),
@@ -650,8 +650,7 @@ class WorkoutNotifier extends _$WorkoutNotifier {
         ? List.generate(
             dayNames.length,
             (i) => WorkoutDay(
-              id:
-                  'day_${i + 1}_${DateTime.now().millisecondsSinceEpoch}',
+              id: IdGenerator.generate(),
               name: dayNames[i],
               orderIndex: i,
               exercises: [],
@@ -661,7 +660,7 @@ class WorkoutNotifier extends _$WorkoutNotifier {
           )
         : [
             WorkoutDay(
-              id: 'day_1_${DateTime.now().millisecondsSinceEpoch}',
+              id: IdGenerator.generate(),
               name: 'روز اول',
               orderIndex: 0,
               exercises: [],
@@ -671,7 +670,7 @@ class WorkoutNotifier extends _$WorkoutNotifier {
           ];
 
     final newPlan = WorkoutPlan(
-      id: 'plan_${DateTime.now().millisecondsSinceEpoch}',
+      id: IdGenerator.generate(),
       name: name,
       description: 'برنامه جدید',
       days: days,
