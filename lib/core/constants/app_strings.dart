@@ -70,6 +70,11 @@ class AppStrings {
   static const String nextExerciseLabel = 'تمرین بعدی';
   static const String timed = 'زمانی';
   static const String repBased = 'تکراری';
+  static const String weight = 'وزنه';
+  static const String weightUnit = 'ک‌گ';
+  static const String reps = 'تکرار';
+  static const String weightHint = 'وزنه (ک‌گ)';
+  static const String repsHint = 'تکرار';
 
   // ===================== Add Exercise =====================
   static const String addExercise = 'افزودن تمرین';
@@ -135,6 +140,25 @@ class AppStrings {
   static const String ttsDisabled = 'دستیار صوتی غیرفعال شد';
   static const String soundEnabled = 'صدا فعال';
   static const String soundDisabled = 'صدا غیرفعال';
+
+  // ===================== Analytics =====================
+  static const String exerciseAnalytics = 'تحلیل تمرین';
+  static const String volume = 'حجم تمرین';
+  static const String estimated1RM = 'تخمین ۱ تکرار بیشینه';
+  static const String progressTrend = 'روند پیشرفت';
+  static const String weightProgress = 'روند وزنه';
+  static const String volumeProgress = 'روند حجم تمرین';
+  static const String personalRecord = 'رکورد شخصی';
+  static const String newRecord = 'رکورد جدید ثبت شد!';
+  static const String prBadge = 'رکورد';
+  static const String noDataForChart = 'داده‌ای برای نمایش وجود ندارد';
+  static const String maxWeight = 'بیشترین وزنه';
+  static const String bestEstimated1RM = 'بهترین تخمین ۱RM';
+  static const String kg = 'ک‌گ';
+  static const String date = 'تاریخ';
+  static const String lastWeek = 'هفته گذشته';
+  static const String lastMonth = 'ماه گذشته';
+  static const String allTime = 'همه زمان‌ها';
 
   // ===================== Validation =====================
   static const String setsCountError = 'تعداد ست نباید بیشتر از ۲۰ باشد';

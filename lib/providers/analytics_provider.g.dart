@@ -1,27 +1,26 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
-part of 'active_workout_provider.dart';
+part of 'analytics_provider.dart';
 
 // **************************************************************************
 // RiverpodGenerator
 // **************************************************************************
 
-String _$activeWorkoutNotifierHash() =>
-    r'34a2bb32f2b89f4a141b147fac44579ea31725c3';
+String _$analyticsNotifierHash() => r'250facd052c72ab07d1af1d387740b3cf609c70d';
 
-/// See also [ActiveWorkoutNotifier].
-@ProviderFor(ActiveWorkoutNotifier)
-final activeWorkoutNotifierProvider =
-    NotifierProvider<ActiveWorkoutNotifier, ActiveWorkoutState>.internal(
-      ActiveWorkoutNotifier.new,
-      name: r'activeWorkoutNotifierProvider',
+/// See also [AnalyticsNotifier].
+@ProviderFor(AnalyticsNotifier)
+final analyticsNotifierProvider =
+    NotifierProvider<AnalyticsNotifier, AnalyticsState>.internal(
+      AnalyticsNotifier.new,
+      name: r'analyticsNotifierProvider',
       debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
           ? null
-          : _$activeWorkoutNotifierHash,
+          : _$analyticsNotifierHash,
       dependencies: null,
       allTransitiveDependencies: null,
     );
 
-typedef _$ActiveWorkoutNotifier = Notifier<ActiveWorkoutState>;
+typedef _$AnalyticsNotifier = Notifier<AnalyticsState>;
 // ignore_for_file: type=lint
 // ignore_for_file: subtype_of_sealed_class, invalid_use_of_internal_member, invalid_use_of_visible_for_testing_member, deprecated_member_use_from_same_package

@@ -6,6 +6,8 @@ import 'package:exo/models/exercise_media.dart';
 import 'package:exo/providers/workout_provider.dart';
 import 'package:exo/providers/media_provider.dart';
 import 'package:exo/widgets/exercise_media_widget.dart';
+import 'package:exo/screens/exercise_analytics_screen.dart';
+import 'package:exo/core/theme/app_theme.dart';
 import 'package:exo/core/constants/app_strings.dart';
 import 'package:exo/core/utils/persian_digits.dart';
 import 'package:exo/core/utils/id_generator.dart';
@@ -516,6 +518,20 @@ class _ExerciseCard extends StatelessWidget {
           trailing: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
+              IconButton(
+                icon: Icon(Icons.bar_chart, color: AppTheme.tealPrimary),
+                onPressed: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => ExerciseAnalyticsScreen(
+                        exerciseId: exercise.id,
+                        exerciseName: exercise.name,
+                      ),
+                    ),
+                  );
+                },
+                tooltip: AppStrings.exerciseAnalytics,
+              ),
               const Icon(Icons.drag_handle, color: Colors.grey),
               IconButton(
                 icon: Icon(Icons.delete_outline, color: Colors.red.shade400),

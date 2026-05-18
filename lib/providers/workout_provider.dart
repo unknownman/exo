@@ -129,7 +129,7 @@ class WorkoutNotifier extends _$WorkoutNotifier {
     await _updateCurrentPlan(updatedPlan);
   }
 
-  Future<void> completeDay(String dayId) async {
+  Future<void> completeDay(String dayId, {Map<String, List<SetLog>>? sessionData}) async {
     final currentState = state.valueOrNull;
     if (currentState == null || currentState.plan == null) return;
 
@@ -139,7 +139,13 @@ class WorkoutNotifier extends _$WorkoutNotifier {
     final day = currentState.plan!.days[dayIndex];
 
     final updatedPlan = _manager.markDayCompleted(currentState.plan!, dayId);
-    final log = _manager.createWorkoutLog(day);
+    final log = _manager.createWorkoutLogFromData(
+      dayId: day.id,
+      dayName: day.name,
+      exercises: day.exercises,
+      durationMinutes: day.estimatedDurationMinutes,
+      sessionData: sessionData,
+    );
     final nextDayIndex = _manager.calculateNextDayIndex(updatedPlan.days, dayIndex);
 
     final planWithTimestamp = updatedPlan.copyWith(updatedAt: DateTime.now());

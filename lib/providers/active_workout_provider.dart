@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../models/workout_plan.dart';
+import '../models/workout_log.dart';
 import '../data/models/states/active_workout_state.dart';
 import '../core/utils/logger.dart';
 import '../core/utils/persian_digits.dart';
@@ -33,7 +34,7 @@ class ActiveWorkoutNotifier extends _$ActiveWorkoutNotifier {
       _stopTimer();
     });
     _restoreActiveWorkoutSnapshot();
-    return ActiveWorkoutState.initial();
+    return const ActiveWorkoutState();
   }
 
   void _onLifecycleStateChange(AppLifecycleState appState) {
@@ -72,6 +73,7 @@ class ActiveWorkoutNotifier extends _$ActiveWorkoutNotifier {
         final currentSet = box.get('currentSet') as int?;
         final remainingRestSeconds = box.get('remainingRestSeconds') as int?;
         final workoutStartTimeMs = box.get('workoutStartTime') as int?;
+        final rawSessionData = box.get('sessionData') as Map?;
         
         if (dayId != null) {
           final workoutState = ref.read(workoutNotifierProvider).valueOrNull;
@@ -79,6 +81,15 @@ class ActiveWorkoutNotifier extends _$ActiveWorkoutNotifier {
             final day = workoutState.getDayById(dayId);
               if (day != null) {
               _workoutStartTime = workoutStartTimeMs != null ? DateTime.fromMillisecondsSinceEpoch(workoutStartTimeMs) : null;
+              Map<String, List<SetLog>> restoredSession = {};
+              if (rawSessionData != null) {
+                restoredSession = rawSessionData.map(
+                  (key, value) => MapEntry(
+                    key as String,
+                    (value as List).map((s) => SetLog.fromMap(s as Map<String, dynamic>)).toList(),
+                  ),
+                );
+              }
               state = state.copyWith(
                 dayId: day.id,
                 dayName: day.name,
@@ -90,6 +101,7 @@ class ActiveWorkoutNotifier extends _$ActiveWorkoutNotifier {
                 isTimedExerciseRunning: false,
                 isAllDone: false,
                 clearError: true,
+                currentSessionData: restoredSession,
                 snapshotRestoredMessage: 'تمرین ناتمام شما بازیابی شد.',
               );
               if ((remainingRestSeconds ?? 0) > 0) {
@@ -115,6 +127,10 @@ class ActiveWorkoutNotifier extends _$ActiveWorkoutNotifier {
       if (_workoutStartTime != null) {
         await box.put('workoutStartTime', _workoutStartTime!.millisecondsSinceEpoch);
       }
+      final serializedSession = state.currentSessionData.map(
+        (key, sets) => MapEntry(key, sets.map((s) => s.toMap()).toList()),
+      );
+      await box.put('sessionData', serializedSession);
     } catch (e, st) {
       AppLogger.logError(e, st);
     }
@@ -174,6 +190,31 @@ class ActiveWorkoutNotifier extends _$ActiveWorkoutNotifier {
     } else {
       _startTimedExercise();
     }
+  }
+
+  void updateSetData({
+    required String exerciseId,
+    required int setNumber,
+    int? reps,
+    double? weight,
+    bool? isCompleted,
+  }) {
+    final current = Map<String, List<SetLog>>.from(state.currentSessionData);
+    final existingSets = List<SetLog>.from(current[exerciseId] ?? []);
+    final setIndex = existingSets.indexWhere((s) => s.setNumber == setNumber);
+    final setLog = SetLog(
+      setNumber: setNumber,
+      reps: reps ?? (setIndex >= 0 ? existingSets[setIndex].reps : 0),
+      weight: weight ?? (setIndex >= 0 ? existingSets[setIndex].weight : 0),
+      isCompleted: isCompleted ?? (setIndex >= 0 ? existingSets[setIndex].isCompleted : false),
+    );
+    if (setIndex >= 0) {
+      existingSets[setIndex] = setLog;
+    } else {
+      existingSets.add(setLog);
+    }
+    current[exerciseId] = existingSets;
+    state = state.copyWith(currentSessionData: current);
   }
 
   void finishSet() {

@@ -163,6 +163,50 @@ class WorkoutPlanAdapter extends TypeAdapter<WorkoutPlan> {
   }
 }
 
+class SetLogAdapter extends TypeAdapter<SetLog> {
+  @override
+  final typeId = 5;
+
+  @override
+  void write(BinaryWriter writer, SetLog obj) {
+    writer.writeInt(obj.setNumber);
+    writer.writeInt(obj.reps);
+    writer.writeDouble(obj.weight);
+    writer.writeBool(obj.isCompleted);
+  }
+
+  @override
+  SetLog read(BinaryReader reader) {
+    return SetLog(
+      setNumber: reader.readInt(),
+      reps: reader.readInt(),
+      weight: reader.readDouble(),
+      isCompleted: reader.readBool(),
+    );
+  }
+}
+
+class ExercisePerformanceAdapter extends TypeAdapter<ExercisePerformance> {
+  @override
+  final typeId = 6;
+
+  @override
+  void write(BinaryWriter writer, ExercisePerformance obj) {
+    writer.writeString(obj.exerciseId);
+    writer.writeString(obj.exerciseName);
+    writer.write(obj.sets);
+  }
+
+  @override
+  ExercisePerformance read(BinaryReader reader) {
+    return ExercisePerformance(
+      exerciseId: reader.readString(),
+      exerciseName: reader.readString(),
+      sets: (reader.read() as List).cast<SetLog>(),
+    );
+  }
+}
+
 class WorkoutLogAdapter extends TypeAdapter<WorkoutLog> {
   @override
   final typeId = 4;
@@ -177,19 +221,35 @@ class WorkoutLogAdapter extends TypeAdapter<WorkoutLog> {
     writer.writeInt(obj.totalSets);
     writer.writeInt(obj.totalDurationMinutes);
     writer.writeBool(obj.hasMedia);
+    writer.write(obj.exercises);
   }
 
   @override
   WorkoutLog read(BinaryReader reader) {
+    final id = reader.readString();
+    final dayId = reader.readString();
+    final dayName = reader.readString();
+    final completedAt = DateTime.fromMillisecondsSinceEpoch(reader.readInt());
+    final exerciseCount = reader.readInt();
+    final totalSets = reader.readInt();
+    final totalDurationMinutes = reader.readInt();
+    final hasMedia = reader.readBool();
+    List<ExercisePerformance> exercises = [];
+    try {
+      exercises = (reader.read() as List).cast<ExercisePerformance>();
+    } catch (_) {
+      exercises = [];
+    }
     return WorkoutLog(
-      id: reader.readString(),
-      dayId: reader.readString(),
-      dayName: reader.readString(),
-      completedAt: DateTime.fromMillisecondsSinceEpoch(reader.readInt()),
-      exerciseCount: reader.readInt(),
-      totalSets: reader.readInt(),
-      totalDurationMinutes: reader.readInt(),
-      hasMedia: reader.readBool(),
+      id: id,
+      dayId: dayId,
+      dayName: dayName,
+      completedAt: completedAt,
+      exerciseCount: exerciseCount,
+      totalSets: totalSets,
+      totalDurationMinutes: totalDurationMinutes,
+      hasMedia: hasMedia,
+      exercises: exercises,
     );
   }
 }

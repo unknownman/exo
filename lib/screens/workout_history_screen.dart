@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:exo/providers/workout_provider.dart';
+import 'package:exo/providers/analytics_provider.dart';
 import 'package:exo/models/workout_log.dart';
+import 'package:exo/models/personal_record.dart';
+import 'package:exo/screens/exercise_analytics_screen.dart';
 import 'package:exo/core/theme/app_theme.dart';
 import 'package:exo/screens/shell_screen.dart';
 import 'package:exo/core/constants/app_strings.dart';
@@ -102,130 +105,247 @@ class WorkoutHistoryScreen extends ConsumerWidget {
   }
 }
 
-class _WorkoutLogCard extends StatelessWidget {
+class _WorkoutLogCard extends ConsumerStatefulWidget {
   final WorkoutLog log;
 
   const _WorkoutLogCard({required this.log});
 
   @override
+  ConsumerState<_WorkoutLogCard> createState() => _WorkoutLogCardState();
+}
+
+class _WorkoutLogCardState extends ConsumerState<_WorkoutLogCard> {
+  bool _expanded = false;
+
+  @override
   Widget build(BuildContext context) {
+    final log = widget.log;
+    final analytics = ref.watch(analyticsNotifierProvider);
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Row(
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+      child: Column(
+        children: [
+          InkWell(
+            onTap: () => setState(() => _expanded = !_expanded),
+            borderRadius: BorderRadius.circular(12),
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
                 children: [
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 4,
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 4,
+                              ),
+                              decoration: BoxDecoration(
+                                color: AppTheme.tealPrimary.withAlpha(20),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Text(
+                                log.formattedDate,
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: AppTheme.tealPrimary,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            if (log.hasMedia)
+                              Icon(
+                                Icons.videocam,
+                                size: 16,
+                                color: Colors.grey.shade400,
+                              ),
+                          ],
                         ),
-                        decoration: BoxDecoration(
-                          color: AppTheme.tealPrimary.withAlpha(20),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Text(
-                          log.formattedDate,
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: AppTheme.tealPrimary,
+                        const SizedBox(height: 10),
+                        Text(
+                          log.dayName,
+                          style: const TextStyle(
+                            fontSize: 18,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
-                      ),
-                      const SizedBox(width: 8),
-                      if (log.hasMedia)
-                        Icon(
-                          Icons.videocam,
-                          size: 16,
-                          color: Colors.grey.shade400,
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            _InfoChip(
+                              icon: Icons.fitness_center,
+                              label: '${log.exerciseCount.toPersian()} ${AppStrings.exercises}',
+                            ),
+                            const SizedBox(width: 12),
+                            _InfoChip(
+                              icon: Icons.repeat,
+                              label: '${log.totalSets.toPersian()} ${AppStrings.set}',
+                            ),
+                          ],
                         ),
-                    ],
-                  ),
-                  const SizedBox(height: 10),
-                  Text(
-                    log.dayName,
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
+                      ],
                     ),
                   ),
-                  const SizedBox(height: 8),
-                  Row(
+                  const SizedBox(width: 16),
+                  Column(
                     children: [
-                      _InfoChip(
-                        icon: Icons.fitness_center,
-                        label: '${log.exerciseCount.toPersian()} ${AppStrings.exercises}',
+                      Text(
+                        log.totalDurationMinutes.toPersian(),
+                        style: const TextStyle(
+                          fontSize: 36,
+                          fontWeight: FontWeight.w200,
+                          color: AppTheme.tealPrimary,
+                          height: 1.1,
+                        ),
                       ),
-                      const SizedBox(width: 12),
-                      _InfoChip(
-                        icon: Icons.repeat,
-                        label: '${log.totalSets.toPersian()} ${AppStrings.set}',
+                      Text(
+                        AppStrings.minutes,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey.shade500,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 3,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppTheme.tealPrimary.withAlpha(20),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.check,
+                              size: 12,
+                              color: AppTheme.tealPrimary,
+                            ),
+                            SizedBox(width: 2),
+                            Text(
+                              AppStrings.completed,
+                              style: TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                                color: AppTheme.tealPrimary,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ],
+                  ),
+                  const SizedBox(width: 8),
+                  Icon(
+                    _expanded ? Icons.expand_less : Icons.expand_more,
+                    color: Colors.grey.shade400,
                   ),
                 ],
               ),
             ),
-            const SizedBox(width: 16),
-            Column(
-              children: [
-                Text(
-                  log.totalDurationMinutes.toPersian(),
-                  style: const TextStyle(
-                    fontSize: 36,
-                    fontWeight: FontWeight.w200,
-                    color: AppTheme.tealPrimary,
-                    height: 1.1,
+          ),
+          if (_expanded && log.exercises.isNotEmpty)
+            _buildExerciseDetails(log, analytics.bestLifts),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildExerciseDetails(WorkoutLog log, Map<String, PersonalRecord> bestLifts) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Divider(),
+          const SizedBox(height: 4),
+          ...log.exercises.map((perf) {
+            final completedSets = perf.sets.where((s) => s.isCompleted).length;
+            final best = bestLifts[perf.exerciseId];
+            final isPR = best != null && perf.sets.any((s) =>
+              s.isCompleted && s.weight > 0 && brzycki1RM(s.weight, s.reps) >= best.best1RM);
+            return Padding(
+              padding: const EdgeInsets.symmetric(vertical: 4),
+              child: InkWell(
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => ExerciseAnalyticsScreen(
+                      exerciseId: perf.exerciseId,
+                      exerciseName: perf.exerciseName,
+                    ),
                   ),
                 ),
-                Text(
-                  AppStrings.minutes,
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey.shade500,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 3,
-                  ),
-                  decoration: BoxDecoration(
-                    color: AppTheme.tealPrimary.withAlpha(20),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: const Row(
-                    mainAxisSize: MainAxisSize.min,
+                borderRadius: BorderRadius.circular(8),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 2, horizontal: 4),
+                  child: Row(
                     children: [
-                      Icon(
-                        Icons.check,
-                        size: 12,
-                        color: AppTheme.tealPrimary,
+                      Expanded(
+                        child: Text(
+                          perf.exerciseName,
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
                       ),
-                      SizedBox(width: 2),
+                      if (isPR)
+                        Container(
+                          margin: const EdgeInsets.only(left: 6),
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: Colors.amber.shade100,
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.emoji_events, size: 12, color: Colors.amber.shade800),
+                              const SizedBox(width: 2),
+                              Text(
+                                AppStrings.prBadge,
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.amber.shade800,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      if (perf.weightSummary.isNotEmpty)
+                        Padding(
+                          padding: const EdgeInsets.only(left: 8),
+                          child: Text(
+                            perf.weightSummary,
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey.shade600,
+                            ),
+                          ),
+                        ),
+                      const SizedBox(width: 8),
                       Text(
-                        AppStrings.completed,
+                        '${completedSets.toPersian()}/${perf.sets.length.toPersian()} ${AppStrings.set}',
                         style: TextStyle(
-                          fontSize: 10,
-                          fontWeight: FontWeight.bold,
-                          color: AppTheme.tealPrimary,
+                          fontSize: 12,
+                          color: Colors.grey.shade500,
                         ),
                       ),
                     ],
                   ),
                 ),
-              ],
-            ),
-          ],
-        ),
+              ),
+            );
+          }),
+        ],
       ),
     );
   }

@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import '../../../models/exercise.dart';
+import '../../../models/workout_log.dart';
 
 @immutable
 class ActiveWorkoutState {
@@ -19,6 +20,7 @@ class ActiveWorkoutState {
   final Exercise? nextExerciseSnapshot;
   final int? nextSetNumber;
   final String? snapshotRestoredMessage;
+  final Map<String, List<SetLog>> currentSessionData;
 
   const ActiveWorkoutState({
     this.dayId,
@@ -37,6 +39,7 @@ class ActiveWorkoutState {
     this.nextExerciseSnapshot,
     this.nextSetNumber,
     this.snapshotRestoredMessage,
+    this.currentSessionData = const {},
   });
 
   factory ActiveWorkoutState.initial() => const ActiveWorkoutState();
@@ -72,6 +75,7 @@ class ActiveWorkoutState {
     Exercise? nextExerciseSnapshot,
     int? nextSetNumber,
     String? snapshotRestoredMessage,
+    Map<String, List<SetLog>>? currentSessionData,
     bool clearError = false,
     bool clearDay = false,
     bool clearNextSnapshot = false,
@@ -102,6 +106,7 @@ class ActiveWorkoutState {
       snapshotRestoredMessage: clearSnapshotMessage
           ? null
           : (snapshotRestoredMessage ?? this.snapshotRestoredMessage),
+      currentSessionData: currentSessionData ?? this.currentSessionData,
     );
   }
 }

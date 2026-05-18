@@ -18,6 +18,8 @@ void main() async {
   Hive.registerAdapter(WorkoutDayAdapter());
   Hive.registerAdapter(WorkoutPlanAdapter());
   Hive.registerAdapter(WorkoutLogAdapter());
+  Hive.registerAdapter(SetLogAdapter());
+  Hive.registerAdapter(ExercisePerformanceAdapter());
 
   late Box appBox;
   try {

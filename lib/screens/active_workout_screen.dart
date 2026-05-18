@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:exo/models/exercise.dart';
 import 'package:exo/models/exercise_media.dart';
+import 'package:exo/models/workout_log.dart';
 import 'package:exo/providers/active_workout_provider.dart';
 import 'package:exo/providers/workout_provider.dart';
+import 'package:exo/providers/analytics_provider.dart';
 import 'package:exo/core/theme/app_theme.dart';
 import 'package:exo/widgets/tts_toggle_button.dart';
 import 'package:exo/widgets/exercise_media_widget.dart';
@@ -25,6 +27,77 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
   bool _initialized = false;
   bool _showDescription = false;
   bool _isRestOpen = false;
+  final _weightController = TextEditingController();
+  final _repsController = TextEditingController();
+  String? _lastExerciseId;
+
+  @override
+  void initState() {
+    super.initState();
+    _weightController.addListener(_onWeightChanged);
+    _repsController.addListener(_onRepsChanged);
+  }
+
+  @override
+  void dispose() {
+    _weightController.removeListener(_onWeightChanged);
+    _repsController.removeListener(_onRepsChanged);
+    _weightController.dispose();
+    _repsController.dispose();
+    super.dispose();
+  }
+
+  void _onWeightChanged() {}
+  void _onRepsChanged() {}
+
+  void _checkForPR(Exercise exercise, double weight, int reps) {
+    final isPR = ref.read(analyticsNotifierProvider.notifier)
+        .isNewPR(exercise.id, weight, reps);
+    if (isPR) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              const Icon(Icons.emoji_events, color: Colors.amber),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  '${AppStrings.newRecord} ${exercise.name}',
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+              ),
+            ],
+          ),
+          backgroundColor: AppTheme.tealDark,
+          behavior: SnackBarBehavior.floating,
+          duration: const Duration(seconds: 3),
+        ),
+      );
+    }
+  }
+
+  void _syncControllers(String exerciseId, int setNumber) {
+    final activeState = ref.read(activeWorkoutNotifierProvider);
+    final sets = activeState.currentSessionData[exerciseId] ?? [];
+    final existing = sets.where((s) => s.setNumber == setNumber).firstOrNull;
+    final exercise = activeState.currentExercise;
+    if (exercise == null) return;
+
+    _lastExerciseId = exerciseId;
+    final weightText = existing != null && existing.weight > 0
+        ? existing.weight.toStringAsFixed(1)
+        : '';
+    final repsText = existing != null && existing.reps > 0
+        ? existing.reps.toString()
+        : exercise.repsOrDuration.toString();
+
+    _weightController.removeListener(_onWeightChanged);
+    _repsController.removeListener(_onRepsChanged);
+    _weightController.text = weightText;
+    _repsController.text = repsText;
+    _weightController.addListener(_onWeightChanged);
+    _repsController.addListener(_onRepsChanged);
+  }
 
   @override
   void didChangeDependencies() {
@@ -87,6 +160,9 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
     final currentExercise = ref.watch(
       activeWorkoutNotifierProvider.select((s) => s.currentExercise),
     );
+    final currentSet = ref.watch(
+      activeWorkoutNotifierProvider.select((s) => s.currentSet),
+    );
     final hasError = ref.watch(
       activeWorkoutNotifierProvider.select((s) => s.hasError),
     );
@@ -96,6 +172,12 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
     final isAllDone = ref.watch(
       activeWorkoutNotifierProvider.select((s) => s.isAllDone),
     );
+
+    if (currentExercise != null && (currentExercise.id != _lastExerciseId)) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _syncControllers(currentExercise.id, currentSet);
+      });
+    }
 
     if (!hasDay && currentExercise == null) {
       if (hasError) {
@@ -164,12 +246,14 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
               const SizedBox(height: 48),
               ElevatedButton.icon(
                 onPressed: () async {
-                  final dayId = ref.read(activeWorkoutNotifierProvider).dayId;
+                  final activeState = ref.read(activeWorkoutNotifierProvider);
+                  final dayId = activeState.dayId;
+                  final sessionData = Map<String, List<SetLog>>.from(activeState.currentSessionData);
                   final navigator = Navigator.of(context);
                   if (dayId != null) {
                     await ref
                         .read(workoutNotifierProvider.notifier)
-                        .completeDay(dayId);
+                        .completeDay(dayId, sessionData: sessionData);
                   }
                   await provider.finishWorkout();
                   navigator.popUntil((route) => route.isFirst);
@@ -232,12 +316,14 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
             child: const Text(AppStrings.dismiss),
           ),
           ElevatedButton(
-            onPressed: () async {
-              await provider.cancelWorkout();
-              if (mounted) {
-                Navigator.of(ctx).pop();
-                Navigator.of(context).pop();
-              }
+            onPressed: () {
+              final navigator = Navigator.of(context);
+              provider.cancelWorkout().whenComplete(() {
+                if (mounted) {
+                  navigator.pop();
+                  navigator.pop();
+                }
+              });
             },
             child: const Text(AppStrings.exit),
           ),
@@ -435,35 +521,47 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
 
     return Column(
       children: [
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 20),
-          decoration: BoxDecoration(
-            color: AppTheme.tealPrimary.withAlpha(25),
-            borderRadius: BorderRadius.circular(20),
-          ),
-          child: Column(
-            children: [
-              Text(
-                exercise.repsOrDuration.toPersian(),
-                style: TextStyle(
-                  fontSize: 72,
-                  fontWeight: FontWeight.w200,
-                  color: AppTheme.tealPrimary,
-                ),
+        Row(
+          children: [
+            Expanded(
+              child: _buildInputField(
+                controller: _weightController,
+                label: AppStrings.weight,
+                hint: AppStrings.weightHint,
+                suffix: AppStrings.weightUnit,
               ),
-              Text(
-                exercise.isTimeBased ? AppStrings.second : AppStrings.rep,
-                style: TextStyle(fontSize: 20, color: AppTheme.tealDark),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: _buildInputField(
+                controller: _repsController,
+                label: AppStrings.reps,
+                hint: AppStrings.repsHint,
+                suffix: AppStrings.rep,
               ),
-            ],
-          ),
+            ),
+          ],
         ),
         const SizedBox(height: 32),
         SizedBox(
           width: double.infinity,
           height: 56,
           child: ElevatedButton.icon(
-            onPressed: () => provider.finishSet(),
+            onPressed: () {
+              final weight = double.tryParse(_weightController.text) ?? 0;
+              final reps = int.tryParse(_repsController.text) ?? exercise.repsOrDuration;
+              provider.updateSetData(
+                exerciseId: exercise.id,
+                setNumber: state.currentSet,
+                reps: reps,
+                weight: weight,
+                isCompleted: true,
+              );
+              if (weight > 0) {
+                _checkForPR(exercise, weight, reps);
+              }
+              provider.finishSet();
+            },
             icon: const Icon(Icons.check_circle, size: 28),
             label: const Text(
               AppStrings.finishSet,
@@ -478,6 +576,54 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildInputField({
+    required TextEditingController controller,
+    required String label,
+    required String hint,
+    required String suffix,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppTheme.tealPrimary.withAlpha(25),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Column(
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 14,
+              color: AppTheme.tealDark,
+            ),
+          ),
+          const SizedBox(height: 8),
+          TextField(
+            controller: controller,
+            keyboardType: TextInputType.numberWithOptions(decimal: true),
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              fontSize: 28,
+              fontWeight: FontWeight.w200,
+              color: AppTheme.tealPrimary,
+            ),
+            decoration: InputDecoration(
+              hintText: hint,
+              border: InputBorder.none,
+              isDense: true,
+              contentPadding: EdgeInsets.zero,
+              suffixText: suffix,
+              suffixStyle: TextStyle(
+                fontSize: 14,
+                color: AppTheme.tealDark,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 

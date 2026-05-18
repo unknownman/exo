@@ -107,7 +107,17 @@ class WorkoutStateManager {
     required String dayName,
     required List<Exercise> exercises,
     required int durationMinutes,
+    Map<String, List<SetLog>>? sessionData,
   }) {
+    final performances = exercises.map((ex) {
+      final sets = sessionData?[ex.id] ?? [];
+      return ExercisePerformance(
+        exerciseId: ex.id,
+        exerciseName: ex.name,
+        sets: sets,
+      );
+    }).toList();
+
     return WorkoutLog(
       id: IdGenerator.generate(),
       dayId: dayId,
@@ -117,6 +127,7 @@ class WorkoutStateManager {
       totalSets: exercises.fold(0, (sum, e) => sum + e.sets),
       totalDurationMinutes: durationMinutes,
       hasMedia: exercises.any((e) => e.media.type != ExerciseMediaType.none),
+      exercises: performances,
     );
   }
 

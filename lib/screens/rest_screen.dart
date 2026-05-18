@@ -15,7 +15,36 @@ class RestScreen extends ConsumerStatefulWidget {
   ConsumerState<RestScreen> createState() => _RestScreenState();
 }
 
-class _RestScreenState extends ConsumerState<RestScreen> {
+class _RestScreenState extends ConsumerState<RestScreen>
+    with SingleTickerProviderStateMixin {
+  AnimationController? _pulseController;
+  Animation<double>? _pulseAnimation;
+
+  @override
+  void dispose() {
+    _pulseController?.dispose();
+    super.dispose();
+  }
+
+  void _handlePulse(int remainingSeconds) {
+    if (remainingSeconds <= 5 && remainingSeconds > 0) {
+      if (_pulseController == null || !_pulseController!.isAnimating) {
+        _pulseController?.dispose();
+        _pulseController = AnimationController(
+          vsync: this,
+          duration: const Duration(milliseconds: 500),
+        );
+        _pulseAnimation = Tween<double>(begin: 1.0, end: 1.1).animate(
+          CurvedAnimation(parent: _pulseController!, curve: Curves.easeInOut),
+        );
+        _pulseController!.repeat(reverse: true);
+      }
+    } else {
+      _pulseController?.stop();
+      _pulseController?.reset();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final remaining = ref.watch(
@@ -32,6 +61,11 @@ class _RestScreenState extends ConsumerState<RestScreen> {
     );
     final isResting = ref.watch(
       activeWorkoutNotifierProvider.select((s) => s.isResting),
+    );
+
+    ref.listen<int>(
+      activeWorkoutNotifierProvider.select((s) => s.remainingRestSeconds),
+      (_, remaining) => _handlePulse(remaining),
     );
 
     if (!isResting) {
@@ -77,7 +111,7 @@ class _RestScreenState extends ConsumerState<RestScreen> {
   }
 
   Widget _buildTimerWithRing(int remaining, double progress) {
-    return SizedBox(
+    Widget timerContent = SizedBox(
       width: 220,
       height: 220,
       child: Stack(
@@ -108,6 +142,21 @@ class _RestScreenState extends ConsumerState<RestScreen> {
         ],
       ),
     );
+
+    if (_pulseAnimation != null) {
+      timerContent = AnimatedBuilder(
+        animation: _pulseAnimation!,
+        builder: (context, child) {
+          return Transform.scale(
+            scale: _pulseAnimation!.value,
+            child: child,
+          );
+        },
+        child: timerContent,
+      );
+    }
+
+    return timerContent;
   }
 
   Widget _buildNextUp(Exercise exercise, int? nextSet) {

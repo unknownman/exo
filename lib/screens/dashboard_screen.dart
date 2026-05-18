@@ -424,11 +424,8 @@ class _ExerciseListView extends ConsumerWidget {
         final exercise = currentDay.exercises[index];
         int completedSets = 0;
         if (isActiveMatch) {
-          if (activeWorkout.currentExerciseIndex > index) {
-            completedSets = exercise.sets;
-          } else if (activeWorkout.currentExerciseIndex == index) {
-            completedSets = activeWorkout.currentSet - 1;
-          }
+          final sessionSets = activeWorkout.currentSessionData[exercise.id] ?? [];
+          completedSets = sessionSets.where((s) => s.isCompleted).length;
         }
         return _ExerciseTile(
           exercise: exercise,
