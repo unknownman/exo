@@ -1,4 +1,7 @@
 class AppConstants {
+  static const String appDataBox = 'app_data';
+  static const String activeWorkoutSnapshotBox = 'active_workout_snapshot';
+
   static const List<String> equipmentTypes = [
     'وزن بدن',
     'دمبل',

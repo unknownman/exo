@@ -6,7 +6,7 @@ part of 'workout_repository_impl.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$workoutRepositoryHash() => r'6501049e2ee8f484a903a6da70c9b01771378067';
+String _$workoutRepositoryHash() => r'2ad6a887802bffbc888024ab559d0d80eaf48cbb';
 
 /// See also [workoutRepository].
 @ProviderFor(workoutRepository)

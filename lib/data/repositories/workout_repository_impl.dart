@@ -5,37 +5,19 @@ import '../../domain/repositories/workout_repository.dart';
 import '../../models/workout_plan.dart';
 import '../../models/workout_log.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import '../../providers/storage_providers.dart';
 
 part 'workout_repository_impl.g.dart';
 
 class WorkoutRepositoryImpl with ErrorHandlerMixin implements WorkoutRepository {
-  static const String _boxName = 'app_data';
+  final Box _appBox;
 
-  Future<Box> _getBox() async {
-    try {
-      return await Hive.openBox(_boxName);
-    } catch (_) {
-      try {
-        await Hive.deleteBoxFromDisk(_boxName);
-      } catch (_) {}
-      return await Hive.openBox(_boxName);
-    }
-  }
-
-  Future<Box> _getOrResetBox() async {
-    try {
-      return await _getBox();
-    } catch (_) {
-      await Hive.deleteBoxFromDisk(_boxName);
-      return await Hive.openBox(_boxName);
-    }
-  }
+  WorkoutRepositoryImpl(this._appBox);
 
   @override
   Future<Result<List<WorkoutPlan>>> loadPlans() async {
     return executeSafely(() async {
-      final box = await _getOrResetBox();
-      final plans = (box.get('workout_plans', defaultValue: <WorkoutPlan>[]) as List)
+      final plans = (_appBox.get('workout_plans', defaultValue: <WorkoutPlan>[]) as List)
           .cast<WorkoutPlan>();
       return plans;
     });
@@ -44,24 +26,21 @@ class WorkoutRepositoryImpl with ErrorHandlerMixin implements WorkoutRepository 
   @override
   Future<Result<String?>> getActivePlanId() async {
     return executeSafely(() async {
-      final box = await _getOrResetBox();
-      return box.get('active_plan_id') as String?;
+      return _appBox.get('active_plan_id') as String?;
     });
   }
 
   @override
   Future<Result<int?>> getCurrentDayIndex() async {
     return executeSafely(() async {
-      final box = await _getOrResetBox();
-      return box.get('current_day_index') as int?;
+      return _appBox.get('current_day_index') as int?;
     });
   }
 
   @override
   Future<Result<List<WorkoutLog>>> loadLogs() async {
     return executeSafely(() async {
-      final box = await _getOrResetBox();
-      final logs = (box.get('workout_logs', defaultValue: <WorkoutLog>[]) as List)
+      final logs = (_appBox.get('workout_logs', defaultValue: <WorkoutLog>[]) as List)
           .cast<WorkoutLog>();
       return logs;
     });
@@ -70,45 +49,41 @@ class WorkoutRepositoryImpl with ErrorHandlerMixin implements WorkoutRepository 
   @override
   Future<Result<void>> savePlans(List<WorkoutPlan> plans) async {
     return executeSafely(() async {
-      final box = await _getBox();
-      await box.put('workout_plans', plans);
+      await _appBox.put('workout_plans', plans);
     });
   }
 
   @override
   Future<Result<void>> saveActivePlanId(String planId) async {
     return executeSafely(() async {
-      final box = await _getBox();
-      await box.put('active_plan_id', planId);
+      await _appBox.put('active_plan_id', planId);
     });
   }
 
   @override
   Future<Result<void>> saveCurrentDayIndex(int dayIndex) async {
     return executeSafely(() async {
-      final box = await _getBox();
-      await box.put('current_day_index', dayIndex);
+      await _appBox.put('current_day_index', dayIndex);
     });
   }
 
   @override
   Future<Result<void>> saveLogs(List<WorkoutLog> logs) async {
     return executeSafely(() async {
-      final box = await _getBox();
-      await box.put('workout_logs', logs);
+      await _appBox.put('workout_logs', logs);
     });
   }
 
   @override
   Future<Result<void>> clearAll() async {
     return executeSafely(() async {
-      final box = await _getBox();
-      await box.clear();
+      await _appBox.clear();
     });
   }
 }
 
 @riverpod
 WorkoutRepository workoutRepository(WorkoutRepositoryRef ref) {
-  return WorkoutRepositoryImpl();
+  final box = ref.watch(appBoxProvider);
+  return WorkoutRepositoryImpl(box);
 }

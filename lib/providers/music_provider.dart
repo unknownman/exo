@@ -1,11 +1,11 @@
 import 'dart:io';
 import 'package:audio_session/audio_session.dart';
 import 'package:file_picker/file_picker.dart';
-import 'package:hive_flutter/hive_flutter.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../core/utils/logger.dart';
+import 'storage_providers.dart';
 
 part 'music_provider.g.dart';
 
@@ -58,7 +58,7 @@ class MusicProvider extends _$MusicProvider {
 
   Future<void> _loadSavedTrack() async {
     try {
-      final box = await Hive.openBox('app_data');
+      final box = ref.read(appBoxProvider);
       final path = box.get(_savedTrackKey) as String?;
       if (path != null && path.isNotEmpty) {
         state = state.copyWith(savedTrackPath: path);
@@ -67,12 +67,12 @@ class MusicProvider extends _$MusicProvider {
   }
 
   Future<void> _saveTrackPath(String path) async {
-    final box = await Hive.openBox('app_data');
+    final box = ref.read(appBoxProvider);
     await box.put(_savedTrackKey, path);
   }
 
   Future<void> _removeTrackPath() async {
-    final box = await Hive.openBox('app_data');
+    final box = ref.read(appBoxProvider);
     await box.delete(_savedTrackKey);
   }
 
@@ -114,7 +114,7 @@ class MusicProvider extends _$MusicProvider {
   Future<void> playSavedTrack() async {
     String? path = state.savedTrackPath;
     if (path == null) {
-      final box = await Hive.openBox('app_data');
+      final box = ref.read(appBoxProvider);
       path = box.get(_savedTrackKey) as String?;
       if (path == null || path.isEmpty) return;
       state = state.copyWith(savedTrackPath: path);

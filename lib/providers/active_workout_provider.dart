@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
-import 'package:hive_flutter/hive_flutter.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../models/exercise.dart';
 import '../models/workout_plan.dart';
@@ -10,6 +9,7 @@ import '../core/utils/persian_digits.dart';
 import 'workout_provider.dart';
 import 'tts_provider.dart';
 import 'music_provider.dart';
+import 'storage_providers.dart';
 
 part 'active_workout_provider.g.dart';
 
@@ -61,9 +61,9 @@ class ActiveWorkoutNotifier extends _$ActiveWorkoutNotifier {
     }
   }
 
-  Future<void> _restoreActiveWorkoutSnapshot() async {
+  void _restoreActiveWorkoutSnapshot() {
     try {
-      final box = await Hive.openBox('active_workout_snapshot');
+      final box = ref.read(snapshotBoxProvider);
       if (box.isNotEmpty) {
         final dayId = box.get('dayId') as String?;
         final currentExerciseIndex = box.get('currentExerciseIndex') as int?;
@@ -105,7 +105,7 @@ class ActiveWorkoutNotifier extends _$ActiveWorkoutNotifier {
   Future<void> _persistActiveWorkout() async {
     if (state.dayId == null) return;
     try {
-      final box = await Hive.openBox('active_workout_snapshot');
+      final box = ref.read(snapshotBoxProvider);
       await box.put('dayId', state.dayId!);
       await box.put('currentExerciseIndex', state.currentExerciseIndex);
       await box.put('currentSet', state.currentSet);
@@ -124,7 +124,7 @@ class ActiveWorkoutNotifier extends _$ActiveWorkoutNotifier {
 
   Future<void> clearActiveWorkoutSnapshot() async {
     try {
-      final box = await Hive.openBox('active_workout_snapshot');
+      final box = ref.read(snapshotBoxProvider);
       await box.clear();
     } catch (e, st) {
       AppLogger.logError(e, st);
