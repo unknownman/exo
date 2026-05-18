@@ -1,12 +1,10 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:file_picker/file_picker.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:exo/models/exercise.dart';
 import 'package:exo/models/exercise_media.dart';
 import 'package:exo/providers/workout_provider.dart';
+import 'package:exo/providers/media_provider.dart';
 import 'package:exo/core/constants/app_constants.dart';
 import 'package:exo/widgets/exercise_media_widget.dart';
 import 'package:exo/core/constants/app_strings.dart';
@@ -96,81 +94,12 @@ class _AddExerciseScreenState extends ConsumerState<AddExerciseScreen> {
     return null;
   }
 
-  ExerciseMediaType _getMediaType(String extension) {
-    switch (extension.toLowerCase()) {
-      case 'jpg':
-      case 'jpeg':
-      case 'png':
-      case 'gif':
-        return ExerciseMediaType.image;
-      case 'mp4':
-      case 'mov':
-      case 'avi':
-        return ExerciseMediaType.video;
-      case 'json':
-        return ExerciseMediaType.lottie;
-      default:
-        return ExerciseMediaType.none;
-    }
-  }
-
   Future<void> _pickMedia() async {
-    final result = await FilePicker.platform.pickFiles(
-      type: FileType.custom,
-      allowedExtensions: ['jpg', 'jpeg', 'png', 'gif', 'mp4', 'mov', 'json'],
-    );
-
-    if (result == null || result.files.isEmpty) return;
-
-    final file = result.files.first;
-    final tempPath = file.path;
-    if (tempPath == null) return;
-
-    final extension = tempPath.split('.').last;
-    final type = _getMediaType(extension);
-
-    if (type == ExerciseMediaType.none) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text(AppStrings.unsupportedFileFormat),
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-      }
-      return;
-    }
-
-    try {
-      final appDir = await getApplicationDocumentsDirectory();
-      final mediaDir = Directory('${appDir.path}/exercise_media');
-      if (!await mediaDir.exists()) {
-        await mediaDir.create(recursive: true);
-      }
-
-      final timestamp = DateTime.now().millisecondsSinceEpoch;
-      final destPath = '${mediaDir.path}/$timestamp.$extension';
-      await File(tempPath).copy(destPath);
-
-      if (mounted) {
-        setState(() {
-          _selectedMedia = ExerciseMedia(
-            type: type,
-            source: destPath,
-            isLocal: true,
-          );
-        });
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('${AppStrings.fileSaveError}$e'),
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-      }
-    }
+    final path = await ref.read(mediaRepositoryProvider).pickAndSaveMedia();
+    if (path == null || !mounted) return;
+    setState(() {
+      _selectedMedia = ExerciseMedia.local(path);
+    });
   }
 
   void _clearMedia() {

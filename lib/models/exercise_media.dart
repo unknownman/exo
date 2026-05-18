@@ -16,6 +16,17 @@ class ExerciseMedia {
         source = '',
         isLocal = false;
 
+  factory ExerciseMedia.local(String source) {
+    final extension = source.split('.').last.toLowerCase();
+    final type = switch (extension) {
+      'jpg' || 'jpeg' || 'png' || 'gif' => ExerciseMediaType.image,
+      'mp4' || 'mov' || 'avi' => ExerciseMediaType.video,
+      'json' => ExerciseMediaType.lottie,
+      _ => ExerciseMediaType.none,
+    };
+    return ExerciseMedia(type: type, source: source, isLocal: true);
+  }
+
   ExerciseMedia copyWith({
     ExerciseMediaType? type,
     String? source,
