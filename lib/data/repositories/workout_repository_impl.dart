@@ -15,6 +15,17 @@ class WorkoutRepositoryImpl with ErrorHandlerMixin implements WorkoutRepository 
     try {
       return await Hive.openBox(_boxName);
     } catch (_) {
+      try {
+        await Hive.deleteBoxFromDisk(_boxName);
+      } catch (_) {}
+      return await Hive.openBox(_boxName);
+    }
+  }
+
+  Future<Box> _getOrResetBox() async {
+    try {
+      return await _getBox();
+    } catch (_) {
       await Hive.deleteBoxFromDisk(_boxName);
       return await Hive.openBox(_boxName);
     }
@@ -23,7 +34,7 @@ class WorkoutRepositoryImpl with ErrorHandlerMixin implements WorkoutRepository 
   @override
   Future<Result<List<WorkoutPlan>>> loadPlans() async {
     return executeSafely(() async {
-      final box = await _getBox();
+      final box = await _getOrResetBox();
       final plans = (box.get('workout_plans', defaultValue: <WorkoutPlan>[]) as List)
           .cast<WorkoutPlan>();
       return plans;
@@ -33,7 +44,7 @@ class WorkoutRepositoryImpl with ErrorHandlerMixin implements WorkoutRepository 
   @override
   Future<Result<String?>> getActivePlanId() async {
     return executeSafely(() async {
-      final box = await _getBox();
+      final box = await _getOrResetBox();
       return box.get('active_plan_id') as String?;
     });
   }
@@ -41,7 +52,7 @@ class WorkoutRepositoryImpl with ErrorHandlerMixin implements WorkoutRepository 
   @override
   Future<Result<int?>> getCurrentDayIndex() async {
     return executeSafely(() async {
-      final box = await _getBox();
+      final box = await _getOrResetBox();
       return box.get('current_day_index') as int?;
     });
   }
@@ -49,7 +60,7 @@ class WorkoutRepositoryImpl with ErrorHandlerMixin implements WorkoutRepository 
   @override
   Future<Result<List<WorkoutLog>>> loadLogs() async {
     return executeSafely(() async {
-      final box = await _getBox();
+      final box = await _getOrResetBox();
       final logs = (box.get('workout_logs', defaultValue: <WorkoutLog>[]) as List)
           .cast<WorkoutLog>();
       return logs;

@@ -4,6 +4,7 @@ import 'package:exo/screens/dashboard_screen.dart';
 import 'package:exo/screens/workout_history_screen.dart';
 import 'package:exo/screens/plan_editor_screen.dart';
 import 'package:exo/screens/profile_screen.dart';
+import 'package:exo/providers/active_workout_provider.dart';
 import 'package:exo/core/theme/app_theme.dart';
 import 'package:exo/core/constants/app_strings.dart';
 
@@ -15,6 +16,30 @@ class ShellScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final selectedTab = ref.watch(selectedTabProvider);
+
+    ref.listen(
+      activeWorkoutNotifierProvider.select((s) => s.snapshotRestoredMessage),
+      (_, message) {
+        if (message != null) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(message),
+                behavior: SnackBarBehavior.floating,
+                duration: const Duration(seconds: 4),
+                action: SnackBarAction(
+                  label: 'ادامه',
+                  onPressed: () {
+                    ref.read(selectedTabProvider.notifier).state = 0;
+                  },
+                ),
+              ),
+            );
+          });
+          ref.read(activeWorkoutNotifierProvider.notifier).clearSnapshotMessage();
+        }
+      },
+    );
 
     return Scaffold(
       body: IndexedStack(

@@ -33,6 +33,7 @@ class TTSState {
 class TTSService extends _$TTSService {
   FlutterTts? _flutterTts;
   bool _isInitialized = false;
+  int _speechQueueCount = 0;
 
   @override
   TTSState build() {
@@ -67,8 +68,11 @@ class TTSService extends _$TTSService {
         state = state.copyWith(isSpeaking: true);
       });
       _flutterTts?.setCompletionHandler(() {
-        state = state.copyWith(isSpeaking: false);
-        ref.read(musicProviderProvider.notifier).unduck();
+        _speechQueueCount--;
+        state = state.copyWith(isSpeaking: _speechQueueCount > 0);
+        if (_speechQueueCount <= 0) {
+          ref.read(musicProviderProvider.notifier).unduck();
+        }
       });
     } catch (e, st) {
       _flutterTts = null;
@@ -92,17 +96,20 @@ class TTSService extends _$TTSService {
   Future<void> speak(String text) async {
     if (!state.enabled) return;
 
-    // Race condition fix
     while (!_isInitialized) {
       await Future.delayed(const Duration(milliseconds: 100));
     }
     if (_flutterTts == null) return;
 
+    _speechQueueCount++;
     try {
       await ref.read(musicProviderProvider.notifier).duck();
       await _flutterTts?.speak(text);
     } catch (e, st) {
-      ref.read(musicProviderProvider.notifier).unduck();
+      _speechQueueCount--;
+      if (_speechQueueCount <= 0) {
+        ref.read(musicProviderProvider.notifier).unduck();
+      }
       AppLogger.logError(e, st);
     }
   }
@@ -110,6 +117,7 @@ class TTSService extends _$TTSService {
   Future<void> stop() async {
     try {
       await _flutterTts?.stop();
+      _speechQueueCount = 0;
       state = state.copyWith(isSpeaking: false);
       ref.read(musicProviderProvider.notifier).unduck();
     } catch (e, st) { AppLogger.logError(e, st); }

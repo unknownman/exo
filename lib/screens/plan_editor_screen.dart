@@ -1,9 +1,15 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:exo/models/workout_plan.dart';
 import 'package:exo/models/exercise.dart';
+import 'package:exo/models/exercise_media.dart';
 import 'package:exo/providers/workout_provider.dart';
+import 'package:exo/widgets/exercise_media_widget.dart';
 import 'package:exo/core/constants/app_strings.dart';
+import 'package:exo/core/utils/persian_digits.dart';
 
 class PlanEditorScreen extends ConsumerStatefulWidget {
   const PlanEditorScreen({super.key});
@@ -91,19 +97,19 @@ class _PlanEditorScreenState extends ConsumerState<PlanEditorScreen> {
         _StatCard(
           icon: Icons.calendar_today,
           label: AppStrings.days,
-          value: '${plan.days.length}',
+          value: plan.days.length.toPersian(),
         ),
         const SizedBox(width: 12),
         _StatCard(
           icon: Icons.fitness_center,
           label: AppStrings.exercises,
-          value: '${plan.totalExercises}',
+          value: plan.totalExercises.toPersian(),
         ),
         const SizedBox(width: 12),
         _StatCard(
           icon: Icons.timer,
           label: AppStrings.duration,
-          value: '${plan.totalDurationMinutes} ${AppStrings.minutes}',
+          value: '${plan.totalDurationMinutes.toPersian()} ${AppStrings.minutes}',
         ),
       ],
     );
@@ -276,7 +282,7 @@ class _DayCard extends StatelessWidget {
                 ),
                 child: Center(
                   child: Text(
-                    '$dayNumber',
+                    dayNumber.toPersian(),
                     style: const TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
@@ -299,7 +305,7 @@ class _DayCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      '${day.exercises.length} ${AppStrings.exercises} - ${day.totalSets} ${AppStrings.set} - ${day.estimatedDurationMinutes} ${AppStrings.minutes}',
+                      '${day.exercises.length.toPersian()} ${AppStrings.exercises} - ${day.totalSets.toPersian()} ${AppStrings.set} - ${day.estimatedDurationMinutes.toPersian()} ${AppStrings.minutes}',
                       style: TextStyle(
                         color: Colors.grey.shade600,
                         fontSize: 13,
@@ -416,6 +422,7 @@ class _DayDetailScreenState extends ConsumerState<DayDetailScreen> {
                 key: ValueKey(exercise.id),
                 exercise: exercise,
                 onDelete: () => _removeExercise(day.id, exercise.id),
+                onTap: () => _editExercise(exercise),
               );
             },
           );
@@ -437,6 +444,20 @@ class _DayDetailScreenState extends ConsumerState<DayDetailScreen> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (ctx) => _AddExerciseSheet(dayId: widget.dayId),
+    );
+  }
+
+  void _editExercise(Exercise exercise) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => _AddExerciseSheet(
+        dayId: widget.dayId,
+        existingExercise: exercise,
+      ),
     );
   }
 
@@ -465,38 +486,44 @@ class _DayDetailScreenState extends ConsumerState<DayDetailScreen> {
 class _ExerciseCard extends StatelessWidget {
   final Exercise exercise;
   final VoidCallback onDelete;
+  final VoidCallback onTap;
 
   const _ExerciseCard({
     super.key,
     required this.exercise,
     required this.onDelete,
+    required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
-      child: ListTile(
-        leading: Icon(
-          exercise.isTimeBased ? Icons.timer : Icons.repeat,
-          color: Colors.blueGrey,
-        ),
-        title: Text(
-          exercise.name,
-          style: const TextStyle(fontWeight: FontWeight.bold),
-        ),
-        subtitle: Text(
-          '${exercise.sets} ${AppStrings.set} × ${exercise.repsOrDuration} ${exercise.isTimeBased ? AppStrings.second : AppStrings.rep}',
-        ),
-        trailing: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.drag_handle, color: Colors.grey),
-            IconButton(
-              icon: Icon(Icons.delete_outline, color: Colors.red.shade400),
-              onPressed: onDelete,
-            ),
-          ],
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: ListTile(
+          leading: Icon(
+            exercise.isTimeBased ? Icons.timer : Icons.repeat,
+            color: Colors.blueGrey,
+          ),
+          title: Text(
+            exercise.name,
+            style: const TextStyle(fontWeight: FontWeight.bold),
+          ),
+          subtitle: Text(
+            '${exercise.sets.toPersian()} ${AppStrings.set} × ${exercise.repsOrDuration.toPersian()} ${exercise.isTimeBased ? AppStrings.second : AppStrings.rep}',
+          ),
+          trailing: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.drag_handle, color: Colors.grey),
+              IconButton(
+                icon: Icon(Icons.delete_outline, color: Colors.red.shade400),
+                onPressed: onDelete,
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -505,8 +532,12 @@ class _ExerciseCard extends StatelessWidget {
 
 class _AddExerciseSheet extends ConsumerStatefulWidget {
   final String dayId;
+  final Exercise? existingExercise;
 
-  const _AddExerciseSheet({required this.dayId});
+  const _AddExerciseSheet({
+    required this.dayId,
+    this.existingExercise,
+  });
 
   @override
   ConsumerState<_AddExerciseSheet> createState() => _AddExerciseSheetState();
@@ -515,23 +546,133 @@ class _AddExerciseSheet extends ConsumerStatefulWidget {
 class _AddExerciseSheetState extends ConsumerState<_AddExerciseSheet> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
+  final _descriptionController = TextEditingController();
+  final _coachCuesController = TextEditingController();
   final _setsController = TextEditingController(text: '3');
   final _repsController = TextEditingController(text: '12');
   final _restController = TextEditingController(text: '60');
   String _equipment = AppStrings.noEquipment;
   bool _isTimeBased = false;
+  ExerciseMedia? _selectedMedia;
+  bool get _isEditing => widget.existingExercise != null;
+
+  @override
+  void initState() {
+    super.initState();
+    final ex = widget.existingExercise;
+    if (ex != null) {
+      _nameController.text = ex.name;
+      _descriptionController.text = ex.description;
+      _coachCuesController.text = ex.coachCues;
+      _setsController.text = ex.sets.toString();
+      _repsController.text = ex.repsOrDuration.toString();
+      _restController.text = ex.restTime.toString();
+      _equipment = ex.equipment;
+      _isTimeBased = ex.isTimeBased;
+      if (ex.media.type != ExerciseMediaType.none) {
+        _selectedMedia = ex.media;
+      }
+    }
+  }
 
   @override
   void dispose() {
     _nameController.dispose();
+    _descriptionController.dispose();
+    _coachCuesController.dispose();
     _setsController.dispose();
     _repsController.dispose();
     _restController.dispose();
     super.dispose();
   }
 
+  ExerciseMediaType _getMediaType(String extension) {
+    switch (extension.toLowerCase()) {
+      case 'jpg':
+      case 'jpeg':
+      case 'png':
+      case 'gif':
+        return ExerciseMediaType.image;
+      case 'mp4':
+      case 'mov':
+      case 'avi':
+        return ExerciseMediaType.video;
+      case 'json':
+        return ExerciseMediaType.lottie;
+      default:
+        return ExerciseMediaType.none;
+    }
+  }
+
+  Future<void> _pickMedia() async {
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['jpg', 'jpeg', 'png', 'gif', 'mp4', 'mov', 'json'],
+    );
+
+    if (result == null || result.files.isEmpty) return;
+
+    final file = result.files.first;
+    final tempPath = file.path;
+    if (tempPath == null) return;
+
+    final extension = tempPath.split('.').last;
+    final type = _getMediaType(extension);
+
+    if (type == ExerciseMediaType.none) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(AppStrings.unsupportedFileFormat),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+      return;
+    }
+
+    try {
+      final appDir = await getApplicationDocumentsDirectory();
+      final mediaDir = Directory('${appDir.path}/exercise_media');
+      if (!await mediaDir.exists()) {
+        await mediaDir.create(recursive: true);
+      }
+
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
+      final destPath = '${mediaDir.path}/$timestamp.$extension';
+      await File(tempPath).copy(destPath);
+
+      if (mounted) {
+        setState(() {
+          _selectedMedia = ExerciseMedia(
+            type: type,
+            source: destPath,
+            isLocal: true,
+          );
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('${AppStrings.fileSaveError}$e'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
+  }
+
+  void _clearMedia() {
+    setState(() {
+      _selectedMedia = null;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
+    final title = _isEditing ? 'ویرایش تمرین' : AppStrings.addExercise;
+
     return Padding(
       padding: EdgeInsets.only(
         bottom: MediaQuery.of(context).viewInsets.bottom,
@@ -549,9 +690,9 @@ class _AddExerciseSheetState extends ConsumerState<_AddExerciseSheet> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text(
-                    AppStrings.addExercise,
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  Text(
+                    title,
+                    style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                   ),
                   IconButton(
                     icon: const Icon(Icons.close),
@@ -562,6 +703,7 @@ class _AddExerciseSheetState extends ConsumerState<_AddExerciseSheet> {
               const SizedBox(height: 16),
               TextFormField(
                 controller: _nameController,
+                textCapitalization: TextCapitalization.words,
                 decoration: const InputDecoration(
                   labelText: AppStrings.exerciseNameInput,
                   border: OutlineInputBorder(),
@@ -569,6 +711,32 @@ class _AddExerciseSheetState extends ConsumerState<_AddExerciseSheet> {
                 validator: (v) =>
                     v?.trim().isEmpty == true ? AppStrings.exerciseNameRequired : null,
               ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: _descriptionController,
+                maxLines: 3,
+                textCapitalization: TextCapitalization.sentences,
+                decoration: const InputDecoration(
+                  labelText: AppStrings.exerciseDescription,
+                  hintText: AppStrings.exerciseDescriptionHint,
+                  border: OutlineInputBorder(),
+                  alignLabelWithHint: true,
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: _coachCuesController,
+                maxLines: 2,
+                textCapitalization: TextCapitalization.sentences,
+                decoration: const InputDecoration(
+                  labelText: AppStrings.coachCues,
+                  hintText: AppStrings.coachCuesHint,
+                  border: OutlineInputBorder(),
+                  alignLabelWithHint: true,
+                ),
+              ),
+              const SizedBox(height: 12),
+              _buildMediaSection(),
               const SizedBox(height: 12),
               Row(
                 children: [
@@ -641,7 +809,7 @@ class _AddExerciseSheetState extends ConsumerState<_AddExerciseSheet> {
                 style: ElevatedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 16),
                 ),
-            child: const Text(AppStrings.add),
+                child: Text(_isEditing ? 'ذخیره تغییرات' : AppStrings.add),
               ),
               const SizedBox(height: 16),
             ],
@@ -651,22 +819,84 @@ class _AddExerciseSheetState extends ConsumerState<_AddExerciseSheet> {
     );
   }
 
+  Widget _buildMediaSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (_selectedMedia != null) ...[
+          Stack(
+            alignment: Alignment.topRight,
+            children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: Container(
+                  width: double.infinity,
+                  height: 140,
+                  color: Colors.grey.shade100,
+                  child: ExerciseMediaWidget(
+                    media: _selectedMedia!,
+                    fit: BoxFit.contain,
+                    width: double.infinity,
+                    height: 140,
+                  ),
+                ),
+              ),
+              IconButton(
+                onPressed: _clearMedia,
+                icon: const Icon(Icons.close, color: Colors.red),
+                style: IconButton.styleFrom(
+                  backgroundColor: Colors.white.withAlpha(200),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+        ],
+        OutlinedButton.icon(
+          onPressed: _pickMedia,
+          icon: const Icon(Icons.attach_file),
+          label: Text(
+            _selectedMedia != null ? AppStrings.changeFile : AppStrings.selectFile,
+          ),
+          style: OutlinedButton.styleFrom(
+            padding: const EdgeInsets.symmetric(vertical: 12),
+          ),
+        ),
+        Text(
+          AppStrings.supportedMediaFormats,
+          style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
+          textAlign: TextAlign.center,
+        ),
+      ],
+    );
+  }
+
   void _submit() {
     if (!_formKey.currentState!.validate()) return;
 
+    final ex = widget.existingExercise;
     final exercise = Exercise(
-      id: 'ex_${DateTime.now().millisecondsSinceEpoch}',
+      id: ex?.id ?? 'ex_${DateTime.now().millisecondsSinceEpoch}',
       name: _nameController.text.trim(),
+      description: _descriptionController.text.trim(),
+      coachCues: _coachCuesController.text.trim(),
       sets: int.parse(_setsController.text),
       repsOrDuration: int.parse(_repsController.text),
       isTimeBased: _isTimeBased,
       restTime: int.parse(_restController.text),
       equipment: _equipment,
+      media: _selectedMedia ?? const ExerciseMedia.empty(),
     );
 
-    ref
-        .read(workoutNotifierProvider.notifier)
-        .addExercise(widget.dayId, exercise);
+    if (_isEditing) {
+      ref
+          .read(workoutNotifierProvider.notifier)
+          .updateExercise(widget.dayId, ex!.id, exercise);
+    } else {
+      ref
+          .read(workoutNotifierProvider.notifier)
+          .addExercise(widget.dayId, exercise);
+    }
     Navigator.of(context).pop();
   }
 }

@@ -4,8 +4,6 @@ import '../models/exercise_media.dart';
 import '../models/workout_plan.dart';
 import '../models/workout_log.dart';
 import '../data/repositories/workout_repository_impl.dart';
-import '../core/constants/app_strings.dart';
-
 part 'workout_provider.g.dart';
 
 @Riverpod(keepAlive: true)
@@ -85,11 +83,55 @@ class WorkoutNotifier extends _$WorkoutNotifier {
     );
   }
 
+  List<Exercise> _warmupExercises() {
+    return [
+      Exercise(
+        id: 'ex_warm_1',
+        name: 'رول کف پا',
+        sets: 1,
+        repsOrDuration: 180,
+        isTimeBased: true,
+        restTime: 15,
+        equipment: 'وزن بدن',
+      ),
+      Exercise(
+        id: 'ex_warm_2',
+        name: 'Monster Walk با مینی‌لوپ',
+        sets: 3,
+        repsOrDuration: 30,
+        isTimeBased: false,
+        restTime: 45,
+        equipment: 'کش ورزشی',
+        description: 'فعال‌سازی لگن',
+      ),
+      Exercise(
+        id: 'ex_warm_3',
+        name: 'Cat-Cow',
+        sets: 1,
+        repsOrDuration: 120,
+        isTimeBased: true,
+        restTime: 15,
+        equipment: 'وزن بدن',
+        description: 'متحرک‌سازی ستون فقرات',
+      ),
+      Exercise(
+        id: 'ex_warm_4',
+        name: 'Clamshell با مینی‌لوپ',
+        sets: 2,
+        repsOrDuration: 30,
+        isTimeBased: false,
+        restTime: 45,
+        equipment: 'کش ورزشی',
+        description: 'ثبات زانو',
+      ),
+    ];
+  }
+
   WorkoutPlan _createDefaultPlan() {
     return WorkoutPlan(
-      id: 'running_strength_plan',
-      name: AppStrings.defaultPlanName,
-      description: AppStrings.planDescription,
+      id: 'exo_pro',
+      name: 'برنامه تخصصی ۳ روزه',
+      description: 'برنامه‌ای ترکیبی برای قدرت پا، هایپرتروفی شانه و قدرت مرکزی با تمرکز بر اصلاح ساختار و پیشگیری از آسیب',
       days: [_createDay1(), _createDay2(), _createDay3()],
       createdAt: DateTime.now(),
       isActive: true,
@@ -98,81 +140,60 @@ class WorkoutNotifier extends _$WorkoutNotifier {
 
   WorkoutDay _createDay1() {
     return WorkoutDay(
-      id: 'run_day_1',
-      name: 'روز اول - پایین‌تنه و ثبات لگن',
+      id: 'exo_pro_day_1',
+      name: 'قدرت پا و ثبات زنجیره خلفی',
       orderIndex: 0,
       exercises: [
+        ..._warmupExercises(),
         Exercise(
-          id: 'ex_r1_1',
-          name: 'پل باسن با دمبل',
+          id: 'ex_d1_1',
+          name: 'اسکات گابلت (۱۷.۵ ک‌گ)',
+          sets: 4,
+          repsOrDuration: 12,
+          isTimeBased: false,
+          restTime: 75,
+          equipment: 'دمبل',
+          description: 'تمرکز: VMO',
+        ),
+        Exercise(
+          id: 'ex_d1_2',
+          name: 'ددلیفت تک پا (۱۰ ک‌گ)',
+          sets: 4,
+          repsOrDuration: 12,
+          isTimeBased: false,
+          restTime: 75,
+          equipment: 'دمبل',
+          description: 'تمرکز: همسترینگ و مچ پا',
+        ),
+        Exercise(
+          id: 'ex_d1_3',
+          name: 'لانژ معکوس (۸ ک‌گ)',
           sets: 3,
           repsOrDuration: 15,
           isTimeBased: false,
           restTime: 60,
           equipment: 'دمبل',
+          description: 'تمرکز: ثبات زانو',
         ),
         Exercise(
-          id: 'ex_r1_2',
-          name: 'ددلیفت رومانیایی با دمبل',
+          id: 'ex_d1_4',
+          name: 'پل باسن با مینی‌لوپ',
           sets: 3,
-          repsOrDuration: 12,
-          isTimeBased: false,
-          restTime: 75,
-          equipment: 'دمبل',
-        ),
-        Exercise(
-          id: 'ex_r1_3',
-          name: 'اسکوات جام با دمبل',
-          sets: 3,
-          repsOrDuration: 12,
-          isTimeBased: false,
-          restTime: 75,
-          equipment: 'دمبل',
-        ),
-        Exercise(
-          id: 'ex_r1_4',
-          name: 'لانج معکوس کنترل‌شده',
-          sets: 2,
-          repsOrDuration: 10,
+          repsOrDuration: 20,
           isTimeBased: false,
           restTime: 60,
-          equipment: 'دمبل',
+          equipment: 'کش ورزشی',
+          description: 'تمرکز: گلوتئوس ماکسیموس',
         ),
         Exercise(
-          id: 'ex_r1_5',
-          name: 'راه رفتن جانبی با کش',
+          id: 'ex_d1_5',
+          name: 'ساق پا ایستاده با دمبل',
           sets: 3,
-          repsOrDuration: 30,
-          isTimeBased: true,
-          restTime: 45,
-          equipment: 'کش مقاومتی',
-        ),
-        Exercise(
-          id: 'ex_r1_6',
-          name: 'ساق پا تک‌پا',
-          sets: 3,
-          repsOrDuration: 15,
+          repsOrDuration: 20,
           isTimeBased: false,
           restTime: 45,
           equipment: 'دمبل',
-        ),
-        Exercise(
-          id: 'ex_r1_7',
-          name: 'برد داگ',
-          sets: 2,
-          repsOrDuration: 12,
-          isTimeBased: false,
-          restTime: 45,
-          equipment: 'وزن بدن',
-        ),
-        Exercise(
-          id: 'ex_r1_8',
-          name: 'ددباگ',
-          sets: 2,
-          repsOrDuration: 12,
-          isTimeBased: false,
-          restTime: 45,
-          equipment: 'وزن بدن',
+          description: 'تقویت عضلات مچ پا',
         ),
       ],
       isUnlocked: true,
@@ -182,72 +203,60 @@ class WorkoutNotifier extends _$WorkoutNotifier {
 
   WorkoutDay _createDay2() {
     return WorkoutDay(
-      id: 'run_day_2',
-      name: 'روز دوم - بالاتنه و قدرت مرکزی',
+      id: 'exo_pro_day_2',
+      name: 'هایپرتروفی شانه و اصلاح قوز',
       orderIndex: 1,
       exercises: [
+        ..._warmupExercises(),
         Exercise(
-          id: 'ex_r2_1',
-          name: 'پرس سرشانه نشسته با دمبل',
-          sets: 3,
-          repsOrDuration: 12,
+          id: 'ex_d2_1',
+          name: 'پرس سرشانه نشسته (۱۷.۵ ک‌گ)',
+          sets: 4,
+          repsOrDuration: 10,
           isTimeBased: false,
           restTime: 75,
           equipment: 'دمبل',
+          description: 'قدرتی',
         ),
         Exercise(
-          id: 'ex_r2_2',
-          name: 'پارویی تک‌دست با دمبل',
-          sets: 3,
-          repsOrDuration: 12,
+          id: 'ex_d2_2',
+          name: 'نشر جانب دمبل (۵ ک‌گ)',
+          sets: 4,
+          repsOrDuration: 15,
           isTimeBased: false,
-          restTime: 75,
+          restTime: 60,
           equipment: 'دمبل',
+          description: 'هایپرتروفی دلتوئید میانی',
         ),
         Exercise(
-          id: 'ex_r2_3',
+          id: 'ex_d2_3',
+          name: 'نشر خم دمبل (۸ ک‌گ)',
+          sets: 4,
+          repsOrDuration: 15,
+          isTimeBased: false,
+          restTime: 60,
+          equipment: 'دمبل',
+          description: 'اصلاح قوز - دلتوئید خلفی',
+        ),
+        Exercise(
+          id: 'ex_d2_4',
+          name: 'فیس‌پول با مینی‌لوپ',
+          sets: 4,
+          repsOrDuration: 20,
+          isTimeBased: false,
+          restTime: 45,
+          equipment: 'کش ورزشی',
+          description: 'اصلاح وضعیت گردن',
+        ),
+        Exercise(
+          id: 'ex_d2_5',
           name: 'شنا سوئدی',
           sets: 3,
           repsOrDuration: 15,
           isTimeBased: false,
           restTime: 60,
           equipment: 'وزن بدن',
-        ),
-        Exercise(
-          id: 'ex_r2_4',
-          name: 'نشر خم دمبل',
-          sets: 3,
-          repsOrDuration: 15,
-          isTimeBased: false,
-          restTime: 45,
-          equipment: 'دمبل',
-        ),
-        Exercise(
-          id: 'ex_r2_5',
-          name: 'کشش کش برای پشت شانه',
-          sets: 3,
-          repsOrDuration: 15,
-          isTimeBased: false,
-          restTime: 45,
-          equipment: 'کش مقاومتی',
-        ),
-        Exercise(
-          id: 'ex_r2_6',
-          name: 'پلانک',
-          sets: 3,
-          repsOrDuration: 40,
-          isTimeBased: true,
-          restTime: 45,
-          equipment: 'وزن بدن',
-        ),
-        Exercise(
-          id: 'ex_r2_7',
-          name: 'پلانک بغل',
-          sets: 2,
-          repsOrDuration: 30,
-          isTimeBased: true,
-          restTime: 45,
-          equipment: 'وزن بدن',
+          description: 'تقویت سینه و ثبات کتف',
         ),
       ],
       isUnlocked: true,
@@ -257,72 +266,58 @@ class WorkoutNotifier extends _$WorkoutNotifier {
 
   WorkoutDay _createDay3() {
     return WorkoutDay(
-      id: 'run_day_3',
-      name: 'روز سوم - تمرین ترکیبی و اصلاحی',
+      id: 'exo_pro_day_3',
+      name: 'قدرت مرکزی و اصلاح لگن',
       orderIndex: 2,
       exercises: [
+        ..._warmupExercises(),
         Exercise(
-          id: 'ex_r3_1',
-          name: 'اسکوات به جعبه با دمبل',
-          sets: 3,
-          repsOrDuration: 12,
-          isTimeBased: false,
-          restTime: 60,
-          equipment: 'دمبل',
-        ),
-        Exercise(
-          id: 'ex_r3_2',
-          name: 'ددلیفت تک‌پا با دمبل',
-          sets: 3,
-          repsOrDuration: 10,
-          isTimeBased: false,
-          restTime: 60,
-          equipment: 'دمبل',
-        ),
-        Exercise(
-          id: 'ex_r3_3',
-          name: 'بالا رفتن از پله با دمبل',
-          sets: 3,
-          repsOrDuration: 10,
-          isTimeBased: false,
-          restTime: 60,
-          equipment: 'دمبل',
-        ),
-        Exercise(
-          id: 'ex_r3_4',
-          name: 'باز کردن پا به طرفین با کش',
-          sets: 3,
+          id: 'ex_d3_1',
+          name: 'اسکات سومو (۱۷.۵ ک‌گ)',
+          sets: 4,
           repsOrDuration: 15,
           isTimeBased: false,
-          restTime: 45,
-          equipment: 'کش مقاومتی',
+          restTime: 75,
+          equipment: 'دمبل',
+          description: 'تمرکز: آداکتورها/داخل ران',
         ),
         Exercise(
-          id: 'ex_r3_5',
-          name: 'کلم‌شل با کش',
-          sets: 3,
-          repsOrDuration: 15,
-          isTimeBased: false,
-          restTime: 45,
-          equipment: 'کش مقاومتی',
-        ),
-        Exercise(
-          id: 'ex_r3_6',
-          name: 'تعادل تک‌پا',
-          sets: 2,
-          repsOrDuration: 40,
+          id: 'ex_d3_2',
+          name: 'پلانک شکم',
+          sets: 4,
+          repsOrDuration: 60,
           isTimeBased: true,
-          restTime: 30,
+          restTime: 45,
           equipment: 'وزن بدن',
         ),
         Exercise(
-          id: 'ex_r3_7',
-          name: 'کشش همسترینگ و مچ پا',
-          sets: 2,
+          id: 'ex_d3_3',
+          name: 'پلانک پهلو',
+          sets: 3,
           repsOrDuration: 45,
           isTimeBased: true,
-          restTime: 30,
+          restTime: 45,
           equipment: 'وزن بدن',
+        ),
+        Exercise(
+          id: 'ex_d3_4',
+          name: 'ددباگ (Dead Bug)',
+          sets: 3,
+          repsOrDuration: 16,
+          isTimeBased: false,
+          restTime: 45,
+          equipment: 'وزن بدن',
+          description: 'اصلاح کمر و لگن',
+        ),
+        Exercise(
+          id: 'ex_d3_5',
+          name: 'پارویی دمبل تک‌دست (۱۷.۵ ک‌گ)',
+          sets: 4,
+          repsOrDuration: 12,
+          isTimeBased: false,
+          restTime: 75,
+          equipment: 'دمبل',
+          description: 'اصلاح تقارن کمر',
         ),
       ],
       isUnlocked: true,
@@ -363,6 +358,28 @@ class WorkoutNotifier extends _$WorkoutNotifier {
     final updatedDays = currentState.plan!.days.map((day) {
       if (day.id == dayId) {
         return day.addExercise(exercise);
+      }
+      return day;
+    }).toList();
+
+    final updatedPlan = currentState.plan!.copyWith(
+      days: updatedDays,
+      updatedAt: DateTime.now(),
+    );
+
+    await _updateCurrentPlan(updatedPlan);
+  }
+
+  Future<void> updateExercise(String dayId, String exerciseId, Exercise updatedExercise) async {
+    final currentState = state.valueOrNull;
+    if (currentState == null || currentState.plan == null) return;
+
+    final updatedDays = currentState.plan!.days.map((day) {
+      if (day.id == dayId) {
+        final updatedExercises = day.exercises.map((ex) {
+          return ex.id == exerciseId ? updatedExercise : ex;
+        }).toList();
+        return day.copyWith(exercises: updatedExercises);
       }
       return day;
     }).toList();

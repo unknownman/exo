@@ -1,0 +1,143 @@
+{
+    "animation": {
+        "name": "glute_bridge_2_phase",
+        "fps": 30,
+        "duration": 2.5,
+        "loop": true,
+        "style": {
+            "character": "minimal_vector_fitness",
+            "outlineColor": "#666666",
+            "skinColor": "#F2C2A8",
+            "shortsColor": "#FF4B5C",
+            "shoeColor": "#8D98A5",
+            "background": "transparent"
+        },
+        "scenes": [
+            {
+                "frame": 0,
+                "name": "start_position",
+                "description": "شخص در حالت شروع Glute Bridge روی زمین خوابیده",
+                "characterPose": {
+                    "view": "side",
+                    "head": {
+                        "x": 110,
+                        "y": 235,
+                        "rotation": 0
+                    },
+                    "torso": {
+                        "x": 210,
+                        "y": 245,
+                        "rotation": 8,
+                        "width": 180,
+                        "height": 52
+                    },
+                    "hip": {
+                        "x": 300,
+                        "y": 260
+                    },
+                    "legs": [
+                        {
+                            "thighAngle": -42,
+                            "shinAngle": 58
+                        },
+                        {
+                            "thighAngle": -42,
+                            "shinAngle": 58
+                        }
+                    ],
+                    "feet": {
+                        "left": [
+                            430,
+                            315
+                        ],
+                        "right": [
+                            455,
+                            315
+                        ]
+                    },
+                    "arms": {
+                        "left": {
+                            "x": 170,
+                            "y": 275,
+                            "rotation": 25
+                        },
+                        "right": {
+                            "x": 240,
+                            "y": 275,
+                            "rotation": -25
+                        }
+                    }
+                }
+            },
+            {
+                "frame": 38,
+                "name": "bridge_up",
+                "description": "بالاترین نقطه حرکت با انقباض گلوت",
+                "characterPose": {
+                    "view": "side",
+                    "head": {
+                        "x": 110,
+                        "y": 235,
+                        "rotation": 0
+                    },
+                    "torso": {
+                        "x": 225,
+                        "y": 205,
+                        "rotation": -6,
+                        "width": 190,
+                        "height": 52
+                    },
+                    "hip": {
+                        "x": 320,
+                        "y": 205
+                    },
+                    "legs": [
+                        {
+                            "thighAngle": -15,
+                            "shinAngle": 70
+                        },
+                        {
+                            "thighAngle": -15,
+                            "shinAngle": 70
+                        }
+                    ],
+                    "feet": {
+                        "left": [
+                            430,
+                            315
+                        ],
+                        "right": [
+                            455,
+                            315
+                        ]
+                    },
+                    "arms": {
+                        "left": {
+                            "x": 170,
+                            "y": 275,
+                            "rotation": 18
+                        },
+                        "right": {
+                            "x": 240,
+                            "y": 275,
+                            "rotation": -18
+                        }
+                    }
+                }
+            }
+        ],
+        "motion": {
+            "type": "smooth_loop",
+            "easing": "easeInOutSine",
+            "transitionFrames": 38,
+            "breathingMotion": true,
+            "upperBodyStable": true
+        },
+        "export": {
+            "format": "bodymovin",
+            "file": "assets/lottie/glute_bridge.json",
+            "optimized": true,
+            "flutterCompatible": true
+        }
+    }
+}

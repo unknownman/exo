@@ -1,10 +1,12 @@
 import 'dart:async';
+import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../models/exercise.dart';
 import '../models/workout_plan.dart';
 import '../core/utils/logger.dart';
+import '../core/utils/persian_digits.dart';
 import 'workout_provider.dart';
 import 'tts_provider.dart';
 import 'music_provider.dart';
@@ -73,7 +75,7 @@ class ActiveWorkoutNotifier extends _$ActiveWorkoutNotifier {
           final workoutState = ref.read(workoutNotifierProvider).valueOrNull;
           if (workoutState != null) {
             final day = workoutState.getDayById(dayId);
-            if (day != null) {
+              if (day != null) {
               _workoutStartTime = workoutStartTimeMs != null ? DateTime.fromMillisecondsSinceEpoch(workoutStartTimeMs) : null;
               state = state.copyWith(
                 dayId: day.id,
@@ -86,6 +88,7 @@ class ActiveWorkoutNotifier extends _$ActiveWorkoutNotifier {
                 isTimedExerciseRunning: false,
                 isAllDone: false,
                 clearError: true,
+                snapshotRestoredMessage: 'تمرین ناتمام شما بازیابی شد.',
               );
               if ((remainingRestSeconds ?? 0) > 0) {
                 _startRestTimer(remainingRestSeconds!);
@@ -113,6 +116,10 @@ class ActiveWorkoutNotifier extends _$ActiveWorkoutNotifier {
     } catch (e, st) {
       AppLogger.logError(e, st);
     }
+  }
+
+  void clearSnapshotMessage() {
+    state = state.copyWith(clearSnapshotMessage: true);
   }
 
   Future<void> clearActiveWorkoutSnapshot() async {
@@ -166,6 +173,7 @@ class ActiveWorkoutNotifier extends _$ActiveWorkoutNotifier {
   }
 
   void finishSet() {
+    HapticFeedback.mediumImpact();
     _stopTimer();
     final exercise = state.currentExercise;
     if (exercise == null) return;
@@ -301,6 +309,9 @@ class ActiveWorkoutNotifier extends _$ActiveWorkoutNotifier {
         _onRestEnd();
         return;
       }
+      if (state.remainingRestSeconds <= 3 && state.remainingRestSeconds > 0) {
+        HapticFeedback.lightImpact();
+      }
       state = state.copyWith(
         remainingRestSeconds: state.remainingRestSeconds - 1,
       );
@@ -383,6 +394,7 @@ class ActiveWorkoutNotifier extends _$ActiveWorkoutNotifier {
   }
 
   void _completeWorkout() {
+    HapticFeedback.heavyImpact();
     state = state.copyWith(
       isAllDone: true,
       isResting: false,
@@ -419,6 +431,7 @@ class ActiveWorkoutState {
   final String? errorMessage;
   final Exercise? nextExerciseSnapshot;
   final int? nextSetNumber;
+  final String? snapshotRestoredMessage;
 
   const ActiveWorkoutState({
     this.dayId,
@@ -436,6 +449,7 @@ class ActiveWorkoutState {
     this.errorMessage,
     this.nextExerciseSnapshot,
     this.nextSetNumber,
+    this.snapshotRestoredMessage,
   });
 
   factory ActiveWorkoutState.initial() => const ActiveWorkoutState();
@@ -470,9 +484,11 @@ class ActiveWorkoutState {
     String? errorMessage,
     Exercise? nextExerciseSnapshot,
     int? nextSetNumber,
+    String? snapshotRestoredMessage,
     bool clearError = false,
     bool clearDay = false,
     bool clearNextSnapshot = false,
+    bool clearSnapshotMessage = false,
   }) {
     return ActiveWorkoutState(
       dayId: clearDay ? null : (dayId ?? this.dayId),
@@ -496,6 +512,9 @@ class ActiveWorkoutState {
       nextSetNumber: clearNextSnapshot
           ? null
           : (nextSetNumber ?? this.nextSetNumber),
+      snapshotRestoredMessage: clearSnapshotMessage
+          ? null
+          : (snapshotRestoredMessage ?? this.snapshotRestoredMessage),
     );
   }
 }
@@ -503,5 +522,5 @@ class ActiveWorkoutState {
 String formatWorkoutTime(int seconds) {
   final minutes = (seconds ~/ 60).toString().padLeft(2, '0');
   final secs = (seconds % 60).toString().padLeft(2, '0');
-  return '$minutes:$secs';
+  return '$minutes:$secs'.toPersianDigits();
 }

@@ -3,12 +3,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:exo/models/exercise.dart';
 import 'package:exo/models/workout_plan.dart';
 import 'package:exo/providers/workout_provider.dart';
+import 'package:exo/providers/active_workout_provider.dart';
 import 'package:exo/screens/active_workout_screen.dart';
 import 'package:exo/screens/add_exercise_screen.dart';
 import 'package:exo/screens/create_plan_screen.dart';
 import 'package:exo/widgets/tts_toggle_button.dart';
 import 'package:exo/core/theme/app_theme.dart';
 import 'package:exo/core/constants/app_strings.dart';
+import 'package:exo/core/utils/persian_digits.dart';
 
 const _addNewPlanValue = '__add_new_plan__';
 
@@ -333,7 +335,7 @@ class _ProgressBar extends ConsumerWidget {
           ),
           const SizedBox(width: 8),
           Text(
-            '$completed/$total',
+            '${completed.toPersian()}/${total.toPersian()}',
             style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
           ),
         ],
@@ -394,6 +396,7 @@ class _ExerciseListView extends ConsumerWidget {
     final currentDay = ref.watch(
       workoutNotifierProvider.select((s) => s.valueOrNull?.currentDay),
     );
+    final activeWorkout = ref.watch(activeWorkoutNotifierProvider);
     if (currentDay == null || currentDay.exercises.isEmpty) {
       return Center(
         child: Column(
@@ -415,13 +418,26 @@ class _ExerciseListView extends ConsumerWidget {
       );
     }
 
+    final isActiveMatch = activeWorkout.hasDay && activeWorkout.dayId == currentDay.id;
+
     return ListView.separated(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       itemCount: currentDay.exercises.length,
       separatorBuilder: (context, index) => const Divider(height: 1),
       itemBuilder: (context, index) {
         final exercise = currentDay.exercises[index];
-        return _ExerciseTile(exercise: exercise);
+        int completedSets = 0;
+        if (isActiveMatch) {
+          if (activeWorkout.currentExerciseIndex > index) {
+            completedSets = exercise.sets;
+          } else if (activeWorkout.currentExerciseIndex == index) {
+            completedSets = activeWorkout.currentSet - 1;
+          }
+        }
+        return _ExerciseTile(
+          exercise: exercise,
+          completedSets: completedSets,
+        );
       },
     );
   }
@@ -429,14 +445,19 @@ class _ExerciseListView extends ConsumerWidget {
 
 class _ExerciseTile extends StatelessWidget {
   final Exercise exercise;
+  final int completedSets;
 
-  const _ExerciseTile({required this.exercise});
+  const _ExerciseTile({
+    required this.exercise,
+    this.completedSets = 0,
+  });
 
   @override
   Widget build(BuildContext context) {
     final repsText = exercise.isTimeBased
-        ? '${exercise.repsOrDuration}${AppStrings.second}'
-        : '${exercise.repsOrDuration} ${AppStrings.rep}';
+        ? '${exercise.repsOrDuration.toPersian()}${AppStrings.second}'
+        : '${exercise.repsOrDuration.toPersian()} ${AppStrings.rep}';
+    final hasActiveProgress = completedSets > 0 && completedSets < exercise.sets;
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 10),
@@ -447,27 +468,53 @@ class _ExerciseTile extends StatelessWidget {
             height: 36,
             alignment: Alignment.center,
             decoration: BoxDecoration(
-              color: AppTheme.tealPrimary.withAlpha(15),
+              color: hasActiveProgress
+                  ? AppTheme.tealPrimary
+                  : AppTheme.tealPrimary.withAlpha(15),
               borderRadius: BorderRadius.circular(10),
             ),
             child: Text(
-              '${exercise.sets}',
+              exercise.sets.toPersian(),
               style: TextStyle(
                 fontSize: 15,
                 fontWeight: FontWeight.bold,
-                color: AppTheme.tealPrimary,
+                color: hasActiveProgress ? Colors.white : AppTheme.tealPrimary,
               ),
             ),
           ),
           const SizedBox(width: 10),
           Expanded(
-            child: Text(
-              exercise.name,
-              style: const TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w600,
-              ),
-              overflow: TextOverflow.ellipsis,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  exercise.name,
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+                if (hasActiveProgress) ...[
+                  const SizedBox(height: 4),
+                  Row(
+                    children: List.generate(exercise.sets, (i) {
+                      final isDone = i < completedSets;
+                      return Container(
+                        width: 8,
+                        height: 8,
+                        margin: const EdgeInsets.only(right: 4),
+                        decoration: BoxDecoration(
+                          color: isDone
+                              ? AppTheme.tealPrimary
+                              : Colors.grey.shade300,
+                          shape: BoxShape.circle,
+                        ),
+                      );
+                    }),
+                  ),
+                ],
+              ],
             ),
           ),
           const SizedBox(width: 8),

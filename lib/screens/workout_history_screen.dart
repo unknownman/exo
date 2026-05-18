@@ -5,6 +5,7 @@ import 'package:exo/models/workout_log.dart';
 import 'package:exo/core/theme/app_theme.dart';
 import 'package:exo/screens/shell_screen.dart';
 import 'package:exo/core/constants/app_strings.dart';
+import 'package:exo/core/utils/persian_digits.dart';
 
 class WorkoutHistoryScreen extends ConsumerWidget {
   const WorkoutHistoryScreen({super.key});
@@ -160,12 +161,12 @@ class _WorkoutLogCard extends StatelessWidget {
                     children: [
                       _InfoChip(
                         icon: Icons.fitness_center,
-                        label: '${log.exerciseCount} ${AppStrings.exercises}',
+                        label: '${log.exerciseCount.toPersian()} ${AppStrings.exercises}',
                       ),
                       const SizedBox(width: 12),
                       _InfoChip(
                         icon: Icons.repeat,
-                        label: '${log.totalSets} ${AppStrings.set}',
+                        label: '${log.totalSets.toPersian()} ${AppStrings.set}',
                       ),
                     ],
                   ),
@@ -176,7 +177,7 @@ class _WorkoutLogCard extends StatelessWidget {
             Column(
               children: [
                 Text(
-                  '${log.totalDurationMinutes}',
+                  log.totalDurationMinutes.toPersian(),
                   style: const TextStyle(
                     fontSize: 36,
                     fontWeight: FontWeight.w200,

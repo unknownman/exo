@@ -9,6 +9,7 @@ import 'package:exo/widgets/tts_toggle_button.dart';
 import 'package:exo/widgets/exercise_media_widget.dart';
 import 'package:exo/screens/rest_screen.dart';
 import 'package:exo/core/constants/app_strings.dart';
+import 'package:exo/core/utils/persian_digits.dart';
 
 class ActiveWorkoutScreen extends ConsumerStatefulWidget {
   final String dayId;
@@ -363,13 +364,13 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
           _buildProgressItem(
             icon: Icons.fitness_center,
             label: AppStrings.set,
-            value: '${state.currentSet}/${state.currentExercise?.sets ?? 0}',
+            value: '${state.currentSet.toPersian()}/${(state.currentExercise?.sets ?? 0).toPersian()}',
           ),
           Container(width: 1, height: 40, color: Colors.grey.shade300),
           _buildProgressItem(
             icon: Icons.replay,
             label: AppStrings.exercises,
-            value: '${state.currentExerciseIndex + 1}/${state.totalExercises}',
+            value: '${(state.currentExerciseIndex + 1).toPersian()}/${state.totalExercises.toPersian()}',
           ),
         ],
       ),
@@ -441,7 +442,7 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
           child: Column(
             children: [
               Text(
-                '${exercise.repsOrDuration}',
+                exercise.repsOrDuration.toPersian(),
                 style: TextStyle(
                   fontSize: 72,
                   fontWeight: FontWeight.w200,

@@ -6,6 +6,7 @@ import 'package:exo/providers/active_workout_provider.dart';
 import 'package:exo/core/theme/app_theme.dart';
 import 'package:exo/widgets/exercise_media_widget.dart';
 import 'package:exo/core/constants/app_strings.dart';
+import 'package:exo/core/utils/persian_digits.dart';
 
 class RestScreen extends ConsumerStatefulWidget {
   const RestScreen({super.key});
@@ -41,7 +42,9 @@ class _RestScreenState extends ConsumerState<RestScreen> {
 
     return Directionality(
       textDirection: TextDirection.rtl,
-      child: Scaffold(
+      child: PopScope(
+        canPop: false,
+        child: Scaffold(
         backgroundColor: AppTheme.tealDark,
         body: SafeArea(
           child: Padding(
@@ -68,6 +71,7 @@ class _RestScreenState extends ConsumerState<RestScreen> {
             ),
           ),
         ),
+      ),
       ),
     );
   }
@@ -169,13 +173,13 @@ class _RestScreenState extends ConsumerState<RestScreen> {
                 ),
                 if (nextSet != null) ...[
                   const SizedBox(height: 2),
-                  Text(
-                    'ست $nextSet از ${exercise.sets}',
-                    style: const TextStyle(
-                      fontSize: 14,
-                      color: Colors.white70,
+                    Text(
+                      'ست ${nextSet.toPersian()} از ${exercise.sets.toPersian()}',
+                      style: const TextStyle(
+                        fontSize: 14,
+                        color: Colors.white70,
+                      ),
                     ),
-                  ),
                 ],
               ],
             ),
