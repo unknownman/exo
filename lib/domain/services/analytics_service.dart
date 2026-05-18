@@ -144,4 +144,67 @@ class AnalyticsService {
     final existing = bestLifts[exerciseId];
     return existing == null || estimated > existing.best1RM;
   }
+
+  int get workoutsThisWeek {
+    final now = DateTime.now();
+    final weekAgo = now.subtract(const Duration(days: 7));
+    return logs.where((log) =>
+      log.completedAt.isAfter(weekAgo) && log.completedAt.isBefore(now.add(const Duration(days: 1)))
+    ).length;
+  }
+
+  double get totalVolumeThisWeek {
+    final now = DateTime.now();
+    final weekAgo = now.subtract(const Duration(days: 7));
+    double volume = 0;
+    for (final log in logs) {
+      if (!log.completedAt.isAfter(weekAgo) || log.completedAt.isAfter(now)) continue;
+      for (final perf in log.exercises) {
+        for (final set in perf.sets) {
+          if (set.isCompleted && set.weight > 0) {
+            volume += set.weight * set.reps;
+          }
+        }
+      }
+    }
+    return volume;
+  }
+
+  double get totalVolumePreviousWeek {
+    final now = DateTime.now();
+    final thisWeekStart = now.subtract(const Duration(days: 7));
+    final prevWeekStart = thisWeekStart.subtract(const Duration(days: 7));
+    double volume = 0;
+    for (final log in logs) {
+      if (!log.completedAt.isAfter(prevWeekStart) || log.completedAt.isAfter(thisWeekStart)) continue;
+      for (final perf in log.exercises) {
+        for (final set in perf.sets) {
+          if (set.isCompleted && set.weight > 0) {
+            volume += set.weight * set.reps;
+          }
+        }
+      }
+    }
+    return volume;
+  }
+
+  double get weeklyVolumeChangePercent {
+    final thisWeek = totalVolumeThisWeek;
+    final prevWeek = totalVolumePreviousWeek;
+    if (prevWeek == 0) return thisWeek > 0 ? 100 : 0;
+    return ((thisWeek - prevWeek) / prevWeek) * 100;
+  }
+
+  Map<DateTime, int> get workoutDaysMap {
+    final map = <DateTime, int>{};
+    for (final log in logs) {
+      final day = DateTime(log.completedAt.year, log.completedAt.month, log.completedAt.day);
+      int totalSets = 0;
+      for (final perf in log.exercises) {
+        totalSets += perf.sets.length;
+      }
+      map[day] = (map[day] ?? 0) + totalSets;
+    }
+    return map;
+  }
 }

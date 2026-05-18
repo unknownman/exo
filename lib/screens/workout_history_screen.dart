@@ -4,7 +4,9 @@ import 'package:exo/providers/workout_provider.dart';
 import 'package:exo/providers/analytics_provider.dart';
 import 'package:exo/models/workout_log.dart';
 import 'package:exo/models/personal_record.dart';
+import 'package:exo/domain/services/analytics_service.dart';
 import 'package:exo/screens/exercise_analytics_screen.dart';
+import 'package:exo/widgets/workout_calendar_widget.dart';
 import 'package:exo/core/theme/app_theme.dart';
 import 'package:exo/screens/shell_screen.dart';
 import 'package:exo/core/constants/app_strings.dart';
@@ -29,13 +31,26 @@ class WorkoutHistoryScreen extends ConsumerWidget {
             return _buildEmptyState(context, ref);
           }
 
-          return ListView.builder(
+          final service = AnalyticsService(logs);
+          final weeklyFreq = service.workoutsThisWeek;
+          final volumeChange = service.weeklyVolumeChangePercent;
+          final workoutDays = service.workoutDaysMap;
+
+          return ListView(
             padding: const EdgeInsets.all(16),
-            itemCount: logs.length,
-            itemBuilder: (context, index) {
-              final log = logs[index];
-              return _WorkoutLogCard(log: log);
-            },
+            children: [
+              _WeeklyInsightCards(
+                weeklyFrequency: weeklyFreq,
+                volumeChangePercent: volumeChange,
+              ),
+              const SizedBox(height: 12),
+              WorkoutCalendarWidget(
+                workoutDays: workoutDays,
+                workoutsThisWeek: weeklyFreq,
+              ),
+              const SizedBox(height: 16),
+              ...logs.map((log) => _WorkoutLogCard(log: log)),
+            ],
           );
         },
       ),
@@ -346,6 +361,122 @@ class _WorkoutLogCardState extends ConsumerState<_WorkoutLogCard> {
             );
           }),
         ],
+      ),
+    );
+  }
+}
+
+class _WeeklyInsightCards extends StatelessWidget {
+  final int weeklyFrequency;
+  final double volumeChangePercent;
+
+  const _WeeklyInsightCards({
+    required this.weeklyFrequency,
+    required this.volumeChangePercent,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: Row(
+            children: [
+              const Icon(Icons.insights, size: 20, color: AppTheme.tealPrimary),
+              const SizedBox(width: 8),
+              Text(
+                AppStrings.weeklySummary,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+        ),
+        Row(
+          children: [
+            Expanded(
+              child: _InsightCard(
+                icon: Icons.fitness_center,
+                label: AppStrings.weeklyFrequency,
+                value: weeklyFrequency.toPersian(),
+                subtitle: AppStrings.workoutsInWeek,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _InsightCard(
+                icon: volumeChangePercent >= 0
+                    ? Icons.trending_up
+                    : Icons.trending_down,
+                label: AppStrings.weeklyVolumeChange,
+                value: '${volumeChangePercent.toStringAsFixed(0).toPersianDigits()}${AppStrings.percentSymbol}',
+                subtitle: volumeChangePercent > 0
+                    ? AppStrings.volumeUp
+                    : volumeChangePercent < 0
+                        ? AppStrings.volumeDown
+                        : AppStrings.volumeSame,
+                valueColor: volumeChangePercent > 0
+                    ? Colors.green
+                    : volumeChangePercent < 0
+                        ? Colors.red
+                        : Colors.grey,
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class _InsightCard extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String value;
+  final String subtitle;
+  final Color? valueColor;
+
+  const _InsightCard({
+    required this.icon,
+    required this.label,
+    required this.value,
+    required this.subtitle,
+    this.valueColor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      margin: EdgeInsets.zero,
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(icon, size: 22, color: valueColor ?? AppTheme.tealPrimary),
+            const SizedBox(height: 8),
+            Text(
+              value,
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: valueColor ?? Colors.black87,
+              ),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              subtitle,
+              style: TextStyle(
+                fontSize: 12,
+                color: Colors.grey.shade600,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

@@ -160,6 +160,38 @@ class AppStrings {
   static const String lastMonth = 'ماه گذشته';
   static const String allTime = 'همه زمان‌ها';
 
+  // ===================== Body Weight =====================
+  static const String bodyWeight = 'وزن بدن';
+  static const String bodyWeightTracking = 'ثبت وزن بدن';
+  static const String weightTrend = 'نمودار تغییرات وزن';
+  static const String addWeight = 'ثبت وزن جدید';
+  static const String weightLabel = 'وزن (کیلوگرم)';
+  static const String weightInputHint = 'مثلاً ۷۵.۵';
+  static const String weightNoteHint = 'یادداشت (اختیاری)';
+  static const String weightLogSaved = 'وزن ثبت شد';
+  static const String weightLogEmpty = 'هنوز وزنی ثبت نشده';
+  static const String weightLogDeleteConfirm = 'این رکورد وزن حذف شود؟';
+  static const String today = 'امروز';
+  static const String noRecordToday = 'امروز ثبت نشده';
+  static const String quickAdd = 'ثبت سریع';
+
+  // ===================== Consistency Calendar =====================
+  static const String consistencyCalendar = 'تقویم استمرار';
+  static const String noWorkoutDays = 'هنوز تمرینی ثبت نشده';
+  static const String daysActive = 'روز فعال';
+  static const String currentStreak = 'روز متوالی';
+  static const String setsOnDay = 'ست';
+
+  // ===================== Weekly Insights =====================
+  static const String weeklySummary = 'خلاصه هفته';
+  static const String weeklyFrequency = 'تعداد تمرین در هفته';
+  static const String weeklyVolumeChange = 'تغییر حجم نسبت به هفته قبل';
+  static const String volumeUp = 'افزایش';
+  static const String volumeDown = 'کاهش';
+  static const String volumeSame = 'بدون تغییر';
+  static const String workoutsInWeek = 'تمرین در این هفته';
+  static const String percentSymbol = '٪';
+
   // ===================== Validation =====================
   static const String setsCountError = 'تعداد ست نباید بیشتر از ۲۰ باشد';
 }

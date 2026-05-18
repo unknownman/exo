@@ -1,13 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:exo/models/exercise.dart';
+import 'package:exo/models/workout_log.dart';
 import 'package:exo/models/workout_plan.dart';
+import 'package:exo/domain/services/analytics_service.dart';
 import 'package:exo/providers/workout_provider.dart';
 import 'package:exo/providers/active_workout_provider.dart';
 import 'package:exo/screens/active_workout_screen.dart';
 import 'package:exo/screens/add_exercise_screen.dart';
 import 'package:exo/screens/create_plan_screen.dart';
 import 'package:exo/widgets/tts_toggle_button.dart';
+import 'package:exo/widgets/workout_calendar_widget.dart';
 import 'package:exo/core/theme/app_theme.dart';
 import 'package:exo/core/constants/app_strings.dart';
 import 'package:exo/core/utils/persian_digits.dart';
@@ -68,6 +71,7 @@ class DashboardScreen extends ConsumerWidget {
               const _DayNavigationBar(),
               const _ProgressBar(),
               const _StartWorkoutButton(),
+              const _CalendarSection(),
               const Expanded(child: _ExerciseListView()),
             ],
           ),
@@ -378,6 +382,33 @@ class _StartWorkoutButton extends ConsumerWidget {
             borderRadius: BorderRadius.circular(14),
           ),
           elevation: 2,
+        ),
+      ),
+    );
+  }
+}
+
+class _CalendarSection extends ConsumerWidget {
+  const _CalendarSection();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final logs = ref.watch(
+      workoutNotifierProvider.select((s) => s.valueOrNull?.workoutLogs ?? <WorkoutLog>[]),
+    );
+    if (logs.isEmpty) return const SizedBox.shrink();
+
+    final service = AnalyticsService(logs);
+    final workoutDays = service.workoutDaysMap;
+    final weeklyFreq = service.workoutsThisWeek;
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+      child: SizedBox(
+        height: 260,
+        child: WorkoutCalendarWidget(
+          workoutDays: workoutDays,
+          workoutsThisWeek: weeklyFreq,
         ),
       ),
     );
