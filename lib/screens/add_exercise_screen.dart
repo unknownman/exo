@@ -108,7 +108,7 @@ class _AddExerciseScreenState extends ConsumerState<AddExerciseScreen> {
     });
   }
 
-  void _submit() {
+  Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
     if (_selectedDayId == null || _selectedEquipment == null) return;
 
@@ -134,10 +134,12 @@ class _AddExerciseScreenState extends ConsumerState<AddExerciseScreen> {
       media: _selectedMedia ?? const ExerciseMedia.empty(),
     );
 
-    ref
+    await ref
         .read(workoutNotifierProvider.notifier)
         .addExercise(_selectedDayId!, exercise);
-    Navigator.of(context).pop();
+    if (mounted) {
+      Navigator.of(context).pop();
+    }
   }
 
   @override

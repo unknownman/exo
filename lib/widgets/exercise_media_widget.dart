@@ -4,6 +4,7 @@ import 'package:lottie/lottie.dart';
 import 'package:video_player/video_player.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:exo/models/exercise_media.dart';
+import 'package:exo/core/utils/logger.dart';
 
 class ExerciseMediaWidget extends StatefulWidget {
   final ExerciseMedia media;
@@ -47,6 +48,8 @@ class _ExerciseMediaWidgetState extends State<ExerciseMediaWidget> {
         _videoController!.play();
         setState(() {});
       }
+    }).catchError((e) {
+      AppLogger.logError(e);
     });
   }
 

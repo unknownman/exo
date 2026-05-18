@@ -1,11 +1,12 @@
 import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:path_provider/path_provider.dart';
+import '../../core/utils/logger.dart';
 import '../../domain/repositories/media_repository.dart';
 
 class MediaRepositoryImpl implements MediaRepository {
   static const _allowedExtensions = [
-    'jpg', 'jpeg', 'png', 'gif', 'mp4', 'mov', 'json',
+    'jpg', 'jpeg', 'png', 'gif', 'mp4', 'mov', 'avi', 'json',
   ];
 
   static const _mediaSubDir = 'exercise_media';
@@ -37,7 +38,8 @@ class MediaRepositoryImpl implements MediaRepository {
       await File(tempPath).copy(destPath);
 
       return destPath;
-    } catch (_) {
+    } catch (e, st) {
+      AppLogger.logError(e, st);
       return null;
     }
   }
@@ -49,8 +51,8 @@ class MediaRepositoryImpl implements MediaRepository {
       if (await file.exists()) {
         await file.delete();
       }
-    } catch (_) {
-      // Silently handle deletion errors
+    } catch (e, st) {
+      AppLogger.logError(e, st);
     }
   }
 }

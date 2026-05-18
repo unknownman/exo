@@ -1,16 +1,18 @@
-import 'dart:io';
 import 'package:audio_session/audio_session.dart';
-import 'package:file_picker/file_picker.dart';
 import 'package:just_audio/just_audio.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../core/utils/logger.dart';
+import '../data/repositories/music_repository_impl.dart';
+import '../domain/repositories/music_repository.dart';
 import 'storage_providers.dart';
 
 part 'music_provider.g.dart';
 
-const _savedTrackKey = 'background_music_path';
-const _musicSubDir = 'exercise_media';
+@riverpod
+MusicRepository musicRepository(MusicRepositoryRef ref) {
+  final box = ref.watch(appBoxProvider);
+  return MusicRepositoryImpl(box);
+}
 
 class MusicState {
   final bool isPlaying;
@@ -58,66 +60,41 @@ class MusicProvider extends _$MusicProvider {
 
   Future<void> _loadSavedTrack() async {
     try {
-      final box = ref.read(appBoxProvider);
-      final path = box.get(_savedTrackKey) as String?;
+      final path = await ref.read(musicRepositoryProvider).getSavedMusicPath();
       if (path != null && path.isNotEmpty) {
         state = state.copyWith(savedTrackPath: path);
       }
     } catch (e, st) { AppLogger.logError(e, st); }
   }
 
-  Future<void> _saveTrackPath(String path) async {
-    final box = ref.read(appBoxProvider);
-    await box.put(_savedTrackKey, path);
-  }
-
-  Future<void> _removeTrackPath() async {
-    final box = ref.read(appBoxProvider);
-    await box.delete(_savedTrackKey);
-  }
-
   Future<void> pickBackgroundMusic() async {
-    final result = await FilePicker.platform.pickFiles(
-      type: FileType.custom,
-      allowedExtensions: ['mp3', 'aac', 'wav', 'ogg', 'm4a'],
-    );
-
-    if (result == null || result.files.isEmpty) return;
-
-    final file = result.files.first;
-    final tempPath = file.path;
-    if (tempPath == null) return;
-
-    final extension = tempPath.split('.').last;
+    final path = await ref.read(musicRepositoryProvider).pickAndSaveMusic();
+    if (path == null) return;
 
     try {
-      final appDir = await getApplicationDocumentsDirectory();
-      final mediaDir = Directory('${appDir.path}/$_musicSubDir');
-      if (!await mediaDir.exists()) {
-        await mediaDir.create(recursive: true);
-      }
-
-      final timestamp = DateTime.now().millisecondsSinceEpoch;
-      final destPath = '${mediaDir.path}/bg_$timestamp.$extension';
-      await File(tempPath).copy(destPath);
-
-      await _saveTrackPath(destPath);
-      state = state.copyWith(savedTrackPath: destPath);
+      await ref.read(musicRepositoryProvider).saveMusicPath(path);
+      state = state.copyWith(savedTrackPath: path);
     } catch (e, st) { AppLogger.logError(e, st); }
   }
 
   Future<void> clearBackgroundMusic() async {
-    await _removeTrackPath();
-    state = state.copyWith(clearSaved: true);
+    try {
+      await ref.read(musicRepositoryProvider).clearSavedMusic();
+      state = state.copyWith(clearSaved: true);
+    } catch (e, st) { AppLogger.logError(e, st); }
   }
 
   Future<void> playSavedTrack() async {
     String? path = state.savedTrackPath;
     if (path == null) {
-      final box = ref.read(appBoxProvider);
-      path = box.get(_savedTrackKey) as String?;
-      if (path == null || path.isEmpty) return;
-      state = state.copyWith(savedTrackPath: path);
+      try {
+        path = await ref.read(musicRepositoryProvider).getSavedMusicPath();
+        if (path == null || path.isEmpty) return;
+        state = state.copyWith(savedTrackPath: path);
+      } catch (e, st) {
+        AppLogger.logError(e, st);
+        return;
+      }
     }
     await playLocalFile(path, loop: true);
   }
@@ -126,7 +103,6 @@ class MusicProvider extends _$MusicProvider {
     try {
       if (_player == null) {
         _player = AudioPlayer();
-        // Configure audio session for background music playback
         final session = await AudioSession.instance;
         await session.configure(const AudioSessionConfiguration(
           avAudioSessionCategory: AVAudioSessionCategory.playback,

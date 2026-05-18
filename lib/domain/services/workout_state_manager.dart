@@ -5,7 +5,6 @@ import '../../models/workout_plan.dart';
 import '../../core/utils/id_generator.dart';
 
 class WorkoutStateManager {
-  static bool isDayFinishedToday(WorkoutDay day) => day.isCompletedToday;
   WorkoutPlan addExerciseToDay(WorkoutPlan plan, String dayId, Exercise exercise) {
     final updatedDays = plan.days.map((day) {
       if (day.id == dayId) return day.addExercise(exercise);

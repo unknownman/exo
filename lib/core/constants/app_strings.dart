@@ -2,20 +2,16 @@ class AppStrings {
   // Error Messages
   static const String databaseLoadError = 'خطا در بارگذاری داده‌ها. برنامه پیش‌فرض بارگذاری شد.';
   static const String databaseSaveError = 'خطا در ذخیره‌سازی اطلاعات در پایگاه داده.';
-  static const String databaseClearError = 'خطا در پاک‌سازی پایگاه داده.';
   static const String unknownError = 'یک خطای ناشناخته رخ داده است.';
   static const String errorWithMessage = 'خطا: ';
   static const String errorTitle = 'خطا';
 
   // General App Labels
   static const String appName = 'اگزو';
-  static const String planDescription = 'برنامه‌ای ترکیبی برای افزایش قدرت، حجم عضلانی کاربردی، ثبات مفاصل، بهبود عملکرد در دویدن و کاهش ریسک آسیب‌دیدگی.';
-  static const String defaultPlanName = 'برنامه ۳ روزه قدرت و حجم برای بهبود دویدن';
+
 
   // Global Actions
-  static const String cancel = 'لغو';
   static const String dismiss = 'انصراف';
-  static const String save = 'ذخیره';
   static const String confirm = 'ثبت';
   static const String done = 'ثبت و بازگشت';
   static const String delete = 'حذف';
@@ -33,7 +29,6 @@ class AppStrings {
 
   // Plan & Day Labels
   static const String editPlan = 'ویرایش برنامه';
-  static const String deletePlan = 'حذف برنامه';
   static const String createNewPlan = 'ایجاد برنامه جدید';
   static const String planNameInput = 'نام برنامه';
   static const String dayNameInput = 'نام روز';
@@ -85,7 +80,6 @@ class AppStrings {
   static const String equipment = 'تجهیزات';
   static const String workoutDay = 'روز تمرینی';
   static const String numberOfSets = 'تعداد ست‌ها';
-  static const String maxSetsError = 'تعداد ست نباید بیشتر از ۲۰ باشد';
   static const String timedSubtitle = 'مدت زمان هر ست بر حسب ثانیه';
   static const String repsSubtitle = 'تعداد تکرار در هر ست';
   static const String timePerSet = 'زمان هر ست (ثانیه)';
@@ -94,9 +88,7 @@ class AppStrings {
   static const String saveExercise = 'ثبت تمرین';
   static const String changeFile = 'تغییر فایل';
   static const String selectFile = 'انتخاب فایل';
-  static const String supportedMediaFormats = 'پشتیبانی از: JPG, PNG, GIF, MP4, JSON (Lottie)';
-  static const String unsupportedFileFormat = 'فرمت فایل پشتیبانی نمی‌شود';
-  static const String fileSaveError = 'خطا در ذخیره فایل: ';
+  static const String supportedMediaFormats = 'پشتیبانی از: JPG, PNG, GIF, MP4, MOV, JSON (Lottie)';
   static const String noPlan = 'برنامه‌ای وجود ندارد';
   static const String noActiveDays = 'هیچ روز فعالی وجود ندارد';
   static const String enterValidNumber = 'عدد معتبر وارد کنید';

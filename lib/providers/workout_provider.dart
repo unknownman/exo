@@ -1,7 +1,10 @@
+export '../data/models/states/workout_plan_state.dart';
+
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../models/exercise.dart';
 import '../models/workout_plan.dart';
 import '../models/workout_log.dart';
+import '../data/models/states/workout_plan_state.dart';
 import '../data/repositories/workout_repository_impl.dart';
 import '../data/datasources/workout_defaults.dart';
 import '../domain/services/workout_state_manager.dart';
@@ -134,7 +137,6 @@ class WorkoutNotifier extends _$WorkoutNotifier {
     if (dayIndex == -1) return;
 
     final day = currentState.plan!.days[dayIndex];
-    if (day.isCompleted) return;
 
     final updatedPlan = _manager.markDayCompleted(currentState.plan!, dayId);
     final log = _manager.createWorkoutLog(day);
@@ -181,34 +183,6 @@ class WorkoutNotifier extends _$WorkoutNotifier {
     await _saveData();
   }
 
-  Future<void> resetAllProgress() async {
-    final currentState = state.valueOrNull;
-    if (currentState == null || currentState.plan == null) return;
-
-    final updatedPlan = _manager.resetDayCompletion(currentState.plan!);
-    await _updateCurrentPlan(updatedPlan);
-
-    final fresh = state.valueOrNull;
-    if (fresh != null) {
-      state = AsyncData(fresh.copyWith(currentDayIndex: 0));
-      await _saveData();
-    }
-  }
-
-  Future<void> resetEverything() async {
-    final repository = ref.read(workoutRepositoryProvider);
-    await repository.clearAll();
-    final defaultPlan = WorkoutDefaults.defaultPlan();
-    state = AsyncData(WorkoutPlanState(
-      plans: [defaultPlan],
-      activePlanId: defaultPlan.id,
-      currentDayIndex: 0,
-      isLoading: false,
-      errorMessage: null,
-    ));
-    await _saveData();
-  }
-
   Future<void> addDay(String dayName) async {
     final currentState = state.valueOrNull;
     if (currentState == null || currentState.plan == null) return;
@@ -248,36 +222,6 @@ class WorkoutNotifier extends _$WorkoutNotifier {
     await _updateCurrentPlan(updatedPlan);
   }
 
-  Future<void> logCompletedWorkout({
-    required String dayId,
-    required String dayName,
-    required List<Exercise> exercises,
-    required int durationMinutes,
-  }) async {
-    final currentState = state.valueOrNull;
-    if (currentState == null) return;
-
-    final log = _manager.createWorkoutLogFromData(
-      dayId: dayId,
-      dayName: dayName,
-      exercises: exercises,
-      durationMinutes: durationMinutes,
-    );
-
-    final updatedLogs = [log, ...currentState.workoutLogs];
-    state = AsyncData(currentState.copyWith(workoutLogs: updatedLogs));
-    await _saveLogs();
-  }
-
-  Future<List<WorkoutLog>> getWorkoutLogs() async {
-    final repository = ref.read(workoutRepositoryProvider);
-    final result = await repository.loadLogs();
-    return result.fold(
-      onSuccess: (logs) => logs,
-      onError: (_) => [],
-    );
-  }
-
   Future<void> _saveLogs() async {
     final currentState = state.valueOrNull;
     if (currentState == null) return;
@@ -307,32 +251,6 @@ class WorkoutNotifier extends _$WorkoutNotifier {
     await _saveData();
   }
 
-  Future<void> deletePlan(String planId) async {
-    final currentState = state.valueOrNull;
-    if (currentState == null || currentState.plans.length <= 1) return;
-
-    final updatedPlans = currentState.plans
-        .where((p) => p.id != planId)
-        .toList();
-
-    String? newActivePlanId = currentState.activePlanId;
-    if (newActivePlanId == planId) {
-      newActivePlanId = updatedPlans.isNotEmpty ? updatedPlans.first.id : null;
-    }
-
-    const newDayIndex = 0;
-
-    state = AsyncData(
-      currentState.copyWith(
-        plans: updatedPlans,
-        activePlanId: newActivePlanId,
-        currentDayIndex: newDayIndex,
-        errorMessage: null,
-      ),
-    );
-    await _saveData();
-  }
-
   Future<void> switchActivePlan(String planId) async {
     final currentState = state.valueOrNull;
     if (currentState == null) return;
@@ -348,86 +266,5 @@ class WorkoutNotifier extends _$WorkoutNotifier {
       ),
     );
     await _saveData();
-  }
-}
-
-class WorkoutPlanState {
-  final List<WorkoutPlan> plans;
-  final String? activePlanId;
-  final int currentDayIndex;
-  final bool isLoading;
-  final String? errorMessage;
-  final List<WorkoutLog> workoutLogs;
-
-  const WorkoutPlanState({
-    this.plans = const [],
-    this.activePlanId,
-    this.currentDayIndex = 0,
-    this.isLoading = false,
-    this.errorMessage,
-    this.workoutLogs = const [],
-  });
-
-  WorkoutPlan? get plan {
-    if (activePlanId == null) return plans.isNotEmpty ? plans.first : null;
-    return plans.cast<WorkoutPlan?>().firstWhere(
-      (p) => p?.id == activePlanId,
-      orElse: () => plans.isNotEmpty ? plans.first : null,
-    );
-  }
-
-  WorkoutPlanState copyWith({
-    List<WorkoutPlan>? plans,
-    String? activePlanId,
-    int? currentDayIndex,
-    bool? isLoading,
-    String? errorMessage,
-    bool clearError = false,
-    List<WorkoutLog>? workoutLogs,
-  }) {
-    return WorkoutPlanState(
-      plans: plans ?? this.plans,
-      activePlanId: activePlanId ?? this.activePlanId,
-      currentDayIndex: currentDayIndex ?? this.currentDayIndex,
-      isLoading: isLoading ?? this.isLoading,
-      errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
-      workoutLogs: workoutLogs ?? this.workoutLogs,
-    );
-  }
-
-  WorkoutDay? get currentDay {
-    final currentPlan = plan;
-    if (currentPlan == null || currentPlan.days.isEmpty) return null;
-    if (currentDayIndex >= currentPlan.days.length) {
-      return currentPlan.days.first;
-    }
-    return currentPlan.days[currentDayIndex];
-  }
-
-  int get completedDaysCount {
-    return plan?.days.where((d) => d.isCompleted).length ?? 0;
-  }
-
-  int get todayCompletedDaysCount {
-    return plan?.days.where((d) => d.isCompletedToday).length ?? 0;
-  }
-
-  int get totalDays {
-    return plan?.days.length ?? 0;
-  }
-
-  bool get allDaysCompleted {
-    final currentPlan = plan;
-    if (currentPlan == null || currentPlan.days.isEmpty) return false;
-    return todayCompletedDaysCount == totalDays;
-  }
-
-  WorkoutDay? getDayById(String dayId) {
-    final currentPlan = plan;
-    if (currentPlan == null) return null;
-    return currentPlan.days.cast<WorkoutDay?>().firstWhere(
-      (d) => d?.id == dayId,
-      orElse: () => currentPlan.days.first,
-    );
   }
 }

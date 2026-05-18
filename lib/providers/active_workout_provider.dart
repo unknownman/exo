@@ -1,9 +1,11 @@
+export '../data/models/states/active_workout_state.dart';
+
 import 'dart:async';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
-import '../models/exercise.dart';
 import '../models/workout_plan.dart';
+import '../data/models/states/active_workout_state.dart';
 import '../core/utils/logger.dart';
 import '../core/utils/persian_digits.dart';
 import 'workout_provider.dart';
@@ -160,7 +162,9 @@ class ActiveWorkoutNotifier extends _$ActiveWorkoutNotifier {
     // Attempt background music — don't block workout if it fails
     try {
       ref.read(musicProviderProvider.notifier).playSavedTrack();
-    } catch (_) {}
+    } catch (e, st) {
+      AppLogger.logError(e, st);
+    }
   }
 
   void toggleTimer() {
@@ -283,17 +287,17 @@ class ActiveWorkoutNotifier extends _$ActiveWorkoutNotifier {
     _moveToNextExercise();
   }
 
-  void finishWorkout() {
+  Future<void> finishWorkout() async {
     _stopTimer();
-    clearActiveWorkoutSnapshot();
-    ref.read(musicProviderProvider.notifier).stop();
+    await clearActiveWorkoutSnapshot();
+    await ref.read(musicProviderProvider.notifier).stop();
     state = ActiveWorkoutState.initial();
   }
 
-  void cancelWorkout() {
+  Future<void> cancelWorkout() async {
     _stopTimer();
-    clearActiveWorkoutSnapshot();
-    ref.read(musicProviderProvider.notifier).stop();
+    await clearActiveWorkoutSnapshot();
+    await ref.read(musicProviderProvider.notifier).stop();
     state = ActiveWorkoutState.initial();
   }
 
@@ -407,115 +411,6 @@ class ActiveWorkoutNotifier extends _$ActiveWorkoutNotifier {
   void _stopTimer() {
     _timer?.cancel();
     _timer = null;
-  }
-
-  int getWorkoutDurationMinutes() {
-    if (_workoutStartTime == null) return 0;
-    return DateTime.now().difference(_workoutStartTime!).inMinutes;
-  }
-}
-
-class ActiveWorkoutState {
-  final String? dayId;
-  final String? dayName;
-  final List<Exercise> exercises;
-  final int currentExerciseIndex;
-  final int currentSet;
-  final bool isResting;
-  final bool isTimedExerciseRunning;
-  final int remainingWorkoutSeconds;
-  final int remainingRestSeconds;
-  final int totalRestSeconds;
-  final bool isAllDone;
-  final bool isLoading;
-  final String? errorMessage;
-  final Exercise? nextExerciseSnapshot;
-  final int? nextSetNumber;
-  final String? snapshotRestoredMessage;
-
-  const ActiveWorkoutState({
-    this.dayId,
-    this.dayName,
-    this.exercises = const [],
-    this.currentExerciseIndex = 0,
-    this.currentSet = 1,
-    this.isResting = false,
-    this.isTimedExerciseRunning = false,
-    this.remainingWorkoutSeconds = 0,
-    this.remainingRestSeconds = 0,
-    this.totalRestSeconds = 0,
-    this.isAllDone = false,
-    this.isLoading = false,
-    this.errorMessage,
-    this.nextExerciseSnapshot,
-    this.nextSetNumber,
-    this.snapshotRestoredMessage,
-  });
-
-  factory ActiveWorkoutState.initial() => const ActiveWorkoutState();
-
-  bool get hasDay => dayId != null;
-  bool get hasError => errorMessage != null;
-  bool get canSkip => isResting || isTimedExerciseRunning;
-
-  Exercise? get currentExercise {
-    if (exercises.isEmpty) return null;
-    return currentExerciseIndex < exercises.length
-        ? exercises[currentExerciseIndex]
-        : null;
-  }
-
-  int get totalExercises => exercises.length;
-  int get totalSets => exercises.fold(0, (sum, e) => sum + e.sets);
-
-  ActiveWorkoutState copyWith({
-    String? dayId,
-    String? dayName,
-    List<Exercise>? exercises,
-    int? currentExerciseIndex,
-    int? currentSet,
-    bool? isResting,
-    bool? isTimedExerciseRunning,
-    int? remainingWorkoutSeconds,
-    int? remainingRestSeconds,
-    int? totalRestSeconds,
-    bool? isAllDone,
-    bool? isLoading,
-    String? errorMessage,
-    Exercise? nextExerciseSnapshot,
-    int? nextSetNumber,
-    String? snapshotRestoredMessage,
-    bool clearError = false,
-    bool clearDay = false,
-    bool clearNextSnapshot = false,
-    bool clearSnapshotMessage = false,
-  }) {
-    return ActiveWorkoutState(
-      dayId: clearDay ? null : (dayId ?? this.dayId),
-      dayName: clearDay ? null : (dayName ?? this.dayName),
-      exercises: exercises ?? this.exercises,
-      currentExerciseIndex: currentExerciseIndex ?? this.currentExerciseIndex,
-      currentSet: currentSet ?? this.currentSet,
-      isResting: isResting ?? this.isResting,
-      isTimedExerciseRunning:
-          isTimedExerciseRunning ?? this.isTimedExerciseRunning,
-      remainingWorkoutSeconds:
-          remainingWorkoutSeconds ?? this.remainingWorkoutSeconds,
-      remainingRestSeconds: remainingRestSeconds ?? this.remainingRestSeconds,
-      totalRestSeconds: totalRestSeconds ?? this.totalRestSeconds,
-      isAllDone: isAllDone ?? this.isAllDone,
-      isLoading: isLoading ?? this.isLoading,
-      errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
-      nextExerciseSnapshot: clearNextSnapshot
-          ? null
-          : (nextExerciseSnapshot ?? this.nextExerciseSnapshot),
-      nextSetNumber: clearNextSnapshot
-          ? null
-          : (nextSetNumber ?? this.nextSetNumber),
-      snapshotRestoredMessage: clearSnapshotMessage
-          ? null
-          : (snapshotRestoredMessage ?? this.snapshotRestoredMessage),
-    );
   }
 }
 

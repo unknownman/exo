@@ -171,7 +171,7 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
                         .read(workoutNotifierProvider.notifier)
                         .completeDay(dayId);
                   }
-                  provider.finishWorkout();
+                  await provider.finishWorkout();
                   navigator.popUntil((route) => route.isFirst);
                 },
                 icon: const Icon(Icons.check),
@@ -232,10 +232,12 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
             child: const Text(AppStrings.dismiss),
           ),
           ElevatedButton(
-            onPressed: () {
-              provider.cancelWorkout();
-              Navigator.of(ctx).pop();
-              Navigator.of(context).pop();
+            onPressed: () async {
+              await provider.cancelWorkout();
+              if (mounted) {
+                Navigator.of(ctx).pop();
+                Navigator.of(context).pop();
+              }
             },
             child: const Text(AppStrings.exit),
           ),

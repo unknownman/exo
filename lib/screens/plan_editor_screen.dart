@@ -801,7 +801,7 @@ class _AddExerciseSheetState extends ConsumerState<_AddExerciseSheet> {
     );
   }
 
-  void _submit() {
+  Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
 
     final ex = widget.existingExercise;
@@ -819,14 +819,16 @@ class _AddExerciseSheetState extends ConsumerState<_AddExerciseSheet> {
     );
 
     if (_isEditing) {
-      ref
+      await ref
           .read(workoutNotifierProvider.notifier)
           .updateExercise(widget.dayId, ex!.id, exercise);
     } else {
-      ref
+      await ref
           .read(workoutNotifierProvider.notifier)
           .addExercise(widget.dayId, exercise);
     }
-    Navigator.of(context).pop();
+    if (mounted) {
+      Navigator.of(context).pop();
+    }
   }
 }
