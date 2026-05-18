@@ -19,7 +19,7 @@ class ExerciseMedia {
   factory ExerciseMedia.local(String source) {
     final extension = source.split('.').last.toLowerCase();
     final type = switch (extension) {
-      'jpg' || 'jpeg' || 'png' || 'gif' => ExerciseMediaType.image,
+      'jpg' || 'jpeg' || 'png' || 'gif' || 'webp' => ExerciseMediaType.image,
       'mp4' || 'mov' || 'avi' => ExerciseMediaType.video,
       'json' => ExerciseMediaType.lottie,
       _ => ExerciseMediaType.none,

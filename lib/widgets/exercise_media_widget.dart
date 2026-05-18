@@ -108,31 +108,51 @@ class _ExerciseMediaWidgetState extends State<ExerciseMediaWidget> {
         );
 
       case ExerciseMediaType.image:
-        return widget.media.isLocal
-            ? Image.file(
-                File(source),
-                width: widget.width,
-                height: widget.height,
-                fit: widget.fit,
-              )
-            : CachedNetworkImage(
-                imageUrl: source,
-                width: widget.width,
-                height: widget.height,
-                fit: widget.fit,
-                placeholder: (_, _) => const SizedBox(
-                  width: 48,
-                  height: 48,
-                  child: Center(
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  ),
-                ),
-                errorWidget: (_, _, _) => Icon(
-                  Icons.broken_image,
-                  size: widget.width ?? 48,
-                  color: Colors.grey,
-                ),
-              );
+        if (widget.media.isLocal) {
+          if (source.startsWith('assets/')) {
+            return Image.asset(
+              source,
+              width: widget.width,
+              height: widget.height,
+              fit: widget.fit,
+              gaplessPlayback: true,
+              errorBuilder: (_, _, _) => const Icon(
+                Icons.fitness_center,
+                size: 48,
+                color: Colors.grey,
+              ),
+            );
+          }
+          return Image.file(
+            File(source),
+            width: widget.width,
+            height: widget.height,
+            fit: widget.fit,
+            errorBuilder: (_, _, _) => const Icon(
+              Icons.broken_image,
+              size: 48,
+              color: Colors.grey,
+            ),
+          );
+        }
+        return CachedNetworkImage(
+          imageUrl: source,
+          width: widget.width,
+          height: widget.height,
+          fit: widget.fit,
+          placeholder: (_, _) => const SizedBox(
+            width: 48,
+            height: 48,
+            child: Center(
+              child: CircularProgressIndicator(strokeWidth: 2),
+            ),
+          ),
+          errorWidget: (_, _, _) => Icon(
+            Icons.broken_image,
+            size: widget.width ?? 48,
+            color: Colors.grey,
+          ),
+        );
 
       case ExerciseMediaType.none:
         return const SizedBox.shrink();

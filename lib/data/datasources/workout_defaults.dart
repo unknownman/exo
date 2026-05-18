@@ -1,8 +1,15 @@
 import '../../models/exercise.dart';
+import '../../models/exercise_media.dart';
 import '../../models/workout_plan.dart';
 import '../../core/utils/id_generator.dart';
 
 class WorkoutDefaults {
+  static ExerciseMedia assetImg(String name) => ExerciseMedia(
+    type: ExerciseMediaType.image,
+    source: 'assets/images/exercises/$name',
+    isLocal: true,
+  );
+
   static List<Exercise> warmupExercises() {
     return [
       Exercise(
@@ -13,6 +20,7 @@ class WorkoutDefaults {
         isTimeBased: true,
         restTime: 15,
         equipment: 'وزن بدن',
+        media: assetImg('foot_roll.webp'),
       ),
       Exercise(
         id: IdGenerator.generate(),
@@ -23,6 +31,7 @@ class WorkoutDefaults {
         restTime: 45,
         equipment: 'کش ورزشی',
         description: 'فعال‌سازی لگن',
+        media: assetImg('monster_walk.webp'),
       ),
       Exercise(
         id: IdGenerator.generate(),
@@ -33,6 +42,7 @@ class WorkoutDefaults {
         restTime: 15,
         equipment: 'وزن بدن',
         description: 'متحرک‌سازی ستون فقرات',
+        media: assetImg('cat_cow.webp'),
       ),
       Exercise(
         id: IdGenerator.generate(),
@@ -43,6 +53,7 @@ class WorkoutDefaults {
         restTime: 45,
         equipment: 'کش ورزشی',
         description: 'ثبات زانو',
+        media: assetImg('clamshell.webp'),
       ),
     ];
   }
@@ -63,6 +74,7 @@ class WorkoutDefaults {
           restTime: 75,
           equipment: 'دمبل',
           description: 'تمرکز: VMO',
+          media: assetImg('goblet_squat.webp'),
         ),
         Exercise(
           id: IdGenerator.generate(),
@@ -73,6 +85,7 @@ class WorkoutDefaults {
           restTime: 75,
           equipment: 'دمبل',
           description: 'تمرکز: همسترینگ و مچ پا',
+          media: assetImg('single_leg_deadlift.webp'),
         ),
         Exercise(
           id: IdGenerator.generate(),
@@ -83,6 +96,7 @@ class WorkoutDefaults {
           restTime: 60,
           equipment: 'دمبل',
           description: 'تمرکز: ثبات زانو',
+          media: assetImg('reverse_lunge.webp'),
         ),
         Exercise(
           id: IdGenerator.generate(),
@@ -93,6 +107,7 @@ class WorkoutDefaults {
           restTime: 60,
           equipment: 'کش ورزشی',
           description: 'تمرکز: گلوتئوس ماکسیموس',
+          media: assetImg('glute_bridge.webp'),
         ),
         Exercise(
           id: IdGenerator.generate(),
@@ -103,6 +118,7 @@ class WorkoutDefaults {
           restTime: 45,
           equipment: 'دمبل',
           description: 'تقویت عضلات مچ پا',
+          media: assetImg('calf_raise.webp'),
         ),
       ],
       isUnlocked: true,
@@ -126,6 +142,7 @@ class WorkoutDefaults {
           restTime: 75,
           equipment: 'دمبل',
           description: 'قدرتی',
+          media: assetImg('shoulder_press.webp'),
         ),
         Exercise(
           id: IdGenerator.generate(),
@@ -136,6 +153,7 @@ class WorkoutDefaults {
           restTime: 60,
           equipment: 'دمبل',
           description: 'هایپرتروفی دلتوئید میانی',
+          media: assetImg('lateral_raise.webp'),
         ),
         Exercise(
           id: IdGenerator.generate(),
@@ -146,6 +164,7 @@ class WorkoutDefaults {
           restTime: 60,
           equipment: 'دمبل',
           description: 'اصلاح قوز - دلتوئید خلفی',
+          media: assetImg('rear_delt_fly.webp'),
         ),
         Exercise(
           id: IdGenerator.generate(),
@@ -156,6 +175,7 @@ class WorkoutDefaults {
           restTime: 45,
           equipment: 'کش ورزشی',
           description: 'اصلاح وضعیت گردن',
+          media: assetImg('face_pull.webp'),
         ),
         Exercise(
           id: IdGenerator.generate(),
@@ -166,6 +186,7 @@ class WorkoutDefaults {
           restTime: 60,
           equipment: 'وزن بدن',
           description: 'تقویت سینه و ثبات کتف',
+          media: assetImg('push_up.webp'),
         ),
       ],
       isUnlocked: true,
@@ -189,6 +210,7 @@ class WorkoutDefaults {
           restTime: 75,
           equipment: 'دمبل',
           description: 'تمرکز: آداکتورها/داخل ران',
+          media: assetImg('sumo_squat.webp'),
         ),
         Exercise(
           id: IdGenerator.generate(),
@@ -198,6 +220,7 @@ class WorkoutDefaults {
           isTimeBased: true,
           restTime: 45,
           equipment: 'وزن بدن',
+          media: assetImg('plank.webp'),
         ),
         Exercise(
           id: IdGenerator.generate(),
@@ -207,6 +230,7 @@ class WorkoutDefaults {
           isTimeBased: true,
           restTime: 45,
           equipment: 'وزن بدن',
+          media: assetImg('side_plank.webp'),
         ),
         Exercise(
           id: IdGenerator.generate(),
@@ -217,6 +241,7 @@ class WorkoutDefaults {
           restTime: 45,
           equipment: 'وزن بدن',
           description: 'اصلاح کمر و لگن',
+          media: assetImg('dead_bug.webp'),
         ),
         Exercise(
           id: IdGenerator.generate(),
@@ -227,6 +252,7 @@ class WorkoutDefaults {
           restTime: 75,
           equipment: 'دمبل',
           description: 'اصلاح تقارن کمر',
+          media: assetImg('one_arm_row.webp'),
         ),
       ],
       isUnlocked: true,
