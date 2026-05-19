@@ -130,6 +130,7 @@ class WorkoutLog {
   final int totalSets;
   final int totalDurationMinutes;
   final bool hasMedia;
+  final bool isSynced;
   final List<ExercisePerformance> exercises;
 
   const WorkoutLog({
@@ -141,6 +142,7 @@ class WorkoutLog {
     required this.totalSets,
     required this.totalDurationMinutes,
     this.hasMedia = false,
+    this.isSynced = false,
     this.exercises = const [],
   });
 
@@ -153,6 +155,7 @@ class WorkoutLog {
     int? totalSets,
     int? totalDurationMinutes,
     bool? hasMedia,
+    bool? isSynced,
     List<ExercisePerformance>? exercises,
   }) {
     return WorkoutLog(
@@ -164,6 +167,7 @@ class WorkoutLog {
       totalSets: totalSets ?? this.totalSets,
       totalDurationMinutes: totalDurationMinutes ?? this.totalDurationMinutes,
       hasMedia: hasMedia ?? this.hasMedia,
+      isSynced: isSynced ?? this.isSynced,
       exercises: exercises ?? this.exercises,
     );
   }
@@ -178,6 +182,7 @@ class WorkoutLog {
       'totalSets': totalSets,
       'totalDurationMinutes': totalDurationMinutes,
       'hasMedia': hasMedia,
+      'isSynced': isSynced,
       'exercises': exercises.map((e) => e.toMap()).toList(),
     };
   }
@@ -192,6 +197,7 @@ class WorkoutLog {
       totalSets: map['totalSets'] as int,
       totalDurationMinutes: map['totalDurationMinutes'] as int,
       hasMedia: map['hasMedia'] as bool? ?? false,
+      isSynced: map['isSynced'] as bool? ?? false,
       exercises: (map['exercises'] as List?)
               ?.map(
                   (e) => ExercisePerformance.fromMap(e as Map<String, dynamic>))

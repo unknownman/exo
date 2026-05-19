@@ -8,6 +8,7 @@ class WorkoutPlan {
   final DateTime createdAt;
   final DateTime? updatedAt;
   final bool isActive;
+  final bool isSynced;
 
   const WorkoutPlan({
     required this.id,
@@ -17,6 +18,7 @@ class WorkoutPlan {
     required this.createdAt,
     this.updatedAt,
     this.isActive = true,
+    this.isSynced = false,
   });
 
   int get totalExercises =>
@@ -36,6 +38,7 @@ class WorkoutPlan {
     DateTime? createdAt,
     DateTime? updatedAt,
     bool? isActive,
+    bool? isSynced,
   }) {
     return WorkoutPlan(
       id: id ?? this.id,
@@ -45,6 +48,7 @@ class WorkoutPlan {
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       isActive: isActive ?? this.isActive,
+      isSynced: isSynced ?? this.isSynced,
     );
   }
 
@@ -57,6 +61,7 @@ class WorkoutPlan {
       'createdAt': createdAt.toIso8601String(),
       'updatedAt': updatedAt?.toIso8601String(),
       'isActive': isActive,
+      'isSynced': isSynced,
     };
   }
 
@@ -73,6 +78,7 @@ class WorkoutPlan {
           ? DateTime.parse(map['updatedAt'] as String)
           : null,
       isActive: map['isActive'] as bool? ?? true,
+      isSynced: map['isSynced'] as bool? ?? false,
     );
   }
 
