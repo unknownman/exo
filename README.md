@@ -1,395 +1,203 @@
-# 🏋️ exo — برنامه تمرینی ۳ روزه
+# Exo — The Smart Offline Workout Tracker
 
-<div align="center">
+> **Version**: 1.0.0+1 • **Locale**: fa-IR (Persian RTL)
 
-**اپلیکیشن مدیریت تمرینات ورزشی با طراحی مدرن و معماری حرفه‌ای**
-
-[![Flutter](https://img.shields.io/badge/Flutter-3.11.5-blue?logo=flutter)](https://flutter.dev)
-[![Dart](https://img.shields.io/badge/Dart-3.11.5-blue?logo=dart)](https://dart.dev)
-[![Riverpod](https://img.shields.io/badge/Riverpod-2.6.1-green?logo=riverpod)](https://riverpod.dev)
-[![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Platform](https://img.shields.io/badge/Platform-iOS%20%7C%20Android-green?logo=android)](https://flutter.dev)
-
-</div>
+A professional, fully offline workout tracking application built with Flutter. Exo combines intelligent Personal Record detection, equipment-aware input logic, and a rich Persian-first UI to deliver a premium training experience without any backend dependency.
 
 ---
 
-## 📸 پیش‌نمایش
+## Key Features
 
-```
-┌─────────────────────────────────────────────┐
-│                                             │
-│         🏋️  برنامه تمرینی ۳ روزه            │
-│                                             │
-│  ┌─────────────────────────────────────┐   │
-│  │  📅 روز اول              ✅ تکمیل   │   │
-│  │  ۴ تمرین · ۱۲ ست                    │   │
-│  │  [شروع تمرین]                        │   │
-│  └─────────────────────────────────────┘   │
-│                                             │
-│  ┌─────────────────────────────────────┐   │
-│  │  📅 روز دوم              🔓 باز     │   │
-│  │  ۳ تمرین · ۹ ست                     │   │
-│  │  [شروع تمرین]                        │   │
-│  └─────────────────────────────────────┘   │
-│                                             │
-│  ┌─────────────────────────────────────┐   │
-│  │  📅 روز سوم              🔒 قفل     │   │
-│  │  ابتدا روز قبلی را کامل کنید        │   │
-│  │  [قفل شده]                           │   │
-│  └─────────────────────────────────────┘   │
-│                                             │
-└─────────────────────────────────────────────┘
-```
+- **Smart PR Detection** — Automatically calculates estimated 1RM (Brzycki formula) and detects new personal records. Bodyweight exercises score by max reps; weighted exercises use proven strength formulas.
+- **Equipment-Aware Inputs** — The active workout screen dynamically adapts labels, hints, and units based on exercise equipment (resistance bands → tension level 1–5, bodyweight → added weight, free weights → kg).
+- **Consistency Calendar** — Visual monthly calendar with intensity heatmap and weekly workout frequency.
+- **Analytics Dashboard** — Per-exercise volume and weight trend charts, best lift records, and PR badges.
+- **GoRouter Navigation** — Declarative routing with `StatefulShellRoute.indexedStack` for bottom tab navigation and type-safe path/extra parameters.
+- **Riverpod 2.x (Code Gen)** — Reactive state management with auto-dispose form notifiers, select-based performance optimizations, and family providers for scoped data.
+- **Hive Local Database** — Zero-dependency, encrypted local storage with snapshot-based active workout persistence (survives app restarts).
+- **RTL Persian UI** — Full right-to-left layout with Persian digit conversion and culturally appropriate string resources.
+- **TTS Audio Coach** — Text-to-speech set announcements and rest timer guidance.
+- **Lottie & Media Support** — Exercise demonstration videos, images, and Lottie animations with in-app media picker.
+- **Body Weight Tracking** — Weight log with trend chart and quick-add functionality.
+- **Background Music** — Built-in music player for workout ambience.
 
 ---
 
-## ✨ ویژگی‌ها
+## Tech Stack
 
-| ویژگی | توضیحات |
-|-------|---------|
-| 📋 **مدیریت تمرین** | افزودن تمرین با نام، تعداد ست، تکرار/زمان، استراحت و نوع تجهیزات |
-| ⏱️ **تایمر هوشمند** | اجرای تمرینات زمانی با شروع/توقف خودکار |
-| 💪 **شمارش ست** | پیگیری خودکار ست‌ها با امکان رد کردن |
-| 😴 **استراحت خودکار** | تایمر استراحت بین ست‌ها با امکان رد کردن |
-| 🔐 **سیستم قفل** | روزهای بعدی قفل می‌شوند تا روز قبل کامل شود |
-| 💾 **ذخیره‌سازی محلی** | ذخیره پیشرفت با SharedPreferences |
-| 🇮🇷 **پشتیبانی RTL** | رابط کاربری کاملاً فارسی و راست‌به‌چپ |
-| 🎨 **Material 3** | طراحی مدرن با تم Material Design 3 |
-| 🔒 **امنیت State** | Immutable state با List.unmodifiable |
-| 🛡️ **مدیریت خطا** | try-catch کامل با logging |
-| ⚡ **Performance** | Selector برای rebuild بهینه |
-
----
-
-## 📱 دمو
-
-> برای مشاهده عملکرد اپلیکیشن، ویدیوی دمو را اجرا کنید یا اپ را روی گوشی نصب کنید.
-
-### جریان کار اپلیکیشن
-
-```
-افزودن تمرین → شروع تمرین → اجرای ست → استراحت → تکمیل روز → باز شدن روز بعد
-```
+| Layer              | Technology                             |
+| ------------------ | -------------------------------------- |
+| **Framework**      | Flutter 3.41+ / Dart 3.11+             |
+| **State Mgmt**     | Riverpod 2.6 (with `riverpod_generator`) |
+| **Navigation**     | GoRouter 17 (declarative + shell routes) |
+| **Local DB**       | Hive 5 (with `hive_flutter`)           |
+| **Charts**         | fl_chart                               |
+| **Animations**     | lottie                                 |
+| **Audio**          | audioplayers, TTS (flutter_tts)        |
+| **Media Pick**     | image_picker, file_picker              |
+| **UUID**           | uuid                                   |
+| **Architecture**   | Clean Architecture inspired            |
 
 ---
 
-## 🚀 نصب و اجرا
+## Architecture
 
-### پیش‌نیازها
+Exo follows a **Clean Architecture–inspired, local-first** design with three primary layers:
 
-- Flutter SDK ≥ 3.11.5
-- Dart SDK ≥ 3.11.5
-- Android Studio / VS Code با Flutter extensions
-
-### مراحل نصب
-
-```bash
-# ۱. کلون کردن پروژه
-git clone https://github.com/unknownman/exo.git
-cd exo
-
-# ۲. نصب وابستگی‌ها
-flutter pub get
-
-# ۳. اجرای اپلیکیشن
-flutter run
+```
+┌─────────────────────────────┐
+│  Presentation (Screens)     │  ConsumerWidgets, ConsumerStatefulWidgets
+├─────────────────────────────┤
+│  State (Providers)          │  Riverpod Notifiers, family providers
+├─────────────────────────────┤
+│  Domain (Business Logic)    │  Services (AnalyticsService, etc.)
+├─────────────────────────────┤
+│  Data (Persistence)         │  Hive adapters, Repository implementations
+└─────────────────────────────┘
 ```
 
-### برای iOS
+### Key Principles
 
-```bash
-flutter run -d iPhone
-```
-
-### برای Android
-
-```bash
-flutter run -d android
-```
-
-### ساخت نسخه release
-
-```bash
-# Android
-flutter build apk --release
-
-# iOS
-flutter build ios --release
-```
+- **All state is Riverpod**. Every screen reads from a provider; no local `setState` for business data.
+- **Immutable state classes** with strict `copyWith` usage.
+- **`select()` for performance**. Provider watchers use targeted selects to avoid unnecessary rebuilds.
+- **Auto-dispose form providers**. Form state lives only while the screen is mounted.
+- **Repository pattern**. Data sources are abstracted behind interfaces (`MediaRepository`, etc.).
 
 ---
 
-## 🏗️ ساختار پروژه
-
-پروژه با معماری **Clean Architecture** و الگوی **Riverpod 2** ساخته شده است.
+## Project Structure
 
 ```
 lib/
-├── main.dart                          # Entry point + DI setup
-├── app.dart                           # MaterialApp configuration
-│
 ├── core/
 │   ├── constants/
-│   │   └── app_constants.dart         # تمام ثابت‌های برنامه
+│   │   ├── app_constants.dart       # App-wide defaults and enums
+│   │   └── app_strings.dart         # All Persian UI strings (single source of truth)
 │   ├── theme/
-│   │   └── app_theme.dart             # Material 3 theme
-│   └── router/
-│       └── app_router.dart            # Named routes
+│   │   └── app_theme.dart           # Material 3 color scheme and text styles
+│   └── utils/
+│       ├── id_generator.dart        # UUID v4 generator
+│       └── persian_digits.dart      # Extension: int.toPersian(), String.toPersianDigits()
 │
 ├── data/
-│   ├── models/
-│   │   ├── exercise.dart               # مدل تمرین (Immutable + Equatable)
-│   │   └── workout_day.dart           # مدل روز تمرینی
-│   ├── datasources/
-│   │   └── local_storage_datasource.dart  # SharedPreferences wrapper
+│   ├── adapters/
+│   │   ├── exercise_adapter.dart
+│   │   ├── workout_log_adapter.dart
+│   │   ├── workout_plan_adapter.dart
+│   │   └── body_weight_adapter.dart
 │   └── repositories/
-│       └── workout_repository_impl.dart   # پیاده‌سازی Repository
+│       ├── media_repository_impl.dart
+│       └── plan_repository_impl.dart
 │
 ├── domain/
-│   └── repositories/
-│       └── workout_repository.dart    # Interface Repository
+│   ├── repositories/
+│   │   ├── media_repository.dart      # Abstract interface
+│   │   └── plan_repository.dart       # Abstract interface
+│   └── services/
+│       ├── analytics_service.dart     # PR detection, volume calc, chart data
+│       └── workout_plan_manager.dart  # Plan CRUD, exercise add/update/remove
 │
-└── presentation/
-    ├── providers/
-    │   ├── workout_provider.dart      # StateNotifier: مدیریت روزها
-    │   ├── active_workout_provider.dart  # StateNotifier: مدیریت تمرین فعال
-    │   └── providers.dart             # Export all providers
-    ├── screens/
-    │   ├── home_screen.dart           # صفحه اصلی
-    │   ├── active_workout_screen.dart    # صفحه تمرین فعال
-    │   └── add_exercise_screen.dart   # فرم افزودن تمرین
-    └── widgets/
-        └── day_card.dart             # کارت روز تمرینی
-```
-
-### نمودار معماری
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│                     Presentation Layer                       │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────────────┐ │
-│  │   Screens   │  │  Providers  │  │      Widgets        │ │
-│  │   (UI)     │  │ (Riverpod)  │  │    (Reusable)       │ │
-│  └──────┬──────┘  └──────┬──────┘  └─────────────────────┘ │
-└─────────┼───────────────┼─────────────────────────────────┘
-          │               │
-          ▼               ▼
-┌─────────────────────────────────────────────────────────────┐
-│                       Domain Layer                          │
-│  ┌─────────────────────────────────────────────────────┐  │
-│  │              WorkoutRepository (Abstract)           │  │
-│  └─────────────────────────┬───────────────────────────┘  │
-└────────────────────────────┼───────────────────────────────┘
-                             │
-                             ▼
-┌─────────────────────────────────────────────────────────────┐
-│                        Data Layer                            │
-│  ┌────────────┐  ┌─────────────┐  ┌────────────────────┐  │
-│  │   Models   │  │ DataSources │  │Repository Impl     │  │
-│  │  (Entity)  │  │ (Storage)   │  │ (Concrete)         │  │
-│  └────────────┘  └─────────────┘  └────────────────────┘  │
-└─────────────────────────────────────────────────────────────┘
+├── models/
+│   ├── exercise.dart
+│   ├── exercise_media.dart
+│   ├── body_weight_record.dart
+│   ├── personal_record.dart
+│   ├── workout_log.dart
+│   └── workout_plan.dart
+│
+├── providers/
+│   ├── active_workout_provider.dart   # Live workout session state
+│   ├── add_exercise_form_provider.dart# Form state for exercise creation
+│   ├── analytics_provider.dart        # PRs, best lifts, per-exercise analytics
+│   ├── media_provider.dart            # MediaRepository DI
+│   ├── music_provider.dart            # Background music player
+│   ├── tts_provider.dart              # Text-to-speech state
+│   ├── weight_provider.dart           # Body weight log state
+│   └── workout_provider.dart          # Root plan + log state
+│
+├── router/
+│   └── app_router.dart                # All routes, shell navigation, path constants
+│
+├── screens/
+│   ├── active_workout_screen.dart     # Live workout with set logging
+│   ├── add_exercise_screen.dart       # Exercise creation form
+│   ├── create_plan_screen.dart        # New plan wizard
+│   ├── dashboard_screen.dart          # Main tab: calendar, day nav, exercise list
+│   ├── exercise_analytics_screen.dart # Per-exercise charts and PRs
+│   ├── plan_editor_screen.dart        # Full plan editor (days + exercises)
+│   ├── profile_screen.dart            # Settings, body weight, music
+│   ├── rest_screen.dart               # Rest timer between sets
+│   ├── shell_screen.dart              # Bottom tab scaffold
+│   └── workout_history_screen.dart    # Past workout logs and volume trends
+│
+└── widgets/
+    ├── exercise_media_widget.dart     # Renders image/video/lottie media
+    ├── tts_toggle_button.dart         # TTS on/off toggle
+    └── workout_calendar_widget.dart   # Consistency calendar grid
 ```
 
 ---
 
-## 🛠️ فناوری‌ها و ابزارها
+## Getting Started
 
-| فناوری | نسخه | کاربرد |
-|--------|------|--------|
-| **Flutter** | 3.11.5 | فریمورک اصلی |
-| **Dart** | 3.11.5 | زبان برنامه‌نویسی |
-| **flutter_riverpod** | 2.6.1 | State Management |
-| **riverpod_annotation** | 2.6.1 | Code Generation |
-| **shared_preferences** | 2.3.4 | Local Storage |
-| **Material 3** | - | طراحی UI |
+### Prerequisites
 
----
+- Flutter SDK 3.41+ (Dart 3.11+)
+- A code editor (VS Code, Android Studio, or IntelliJ)
+- iOS simulator / Android emulator, or a physical device
 
-## 🔧 چگونه کار می‌کند؟
-
-### ۱. افزودن تمرین
-```
-کاربر → فرم افزودن تمرین → Validation → WorkoutProvider.addExercise() → ذخیره
-```
-
-### ۲. شروع تمرین
-```
-کاربر → انتخاب روز → ActiveWorkoutScreen → ActiveWorkoutProvider.startWorkout()
-```
-
-### ۳. اجرای تمرین
-```
-تایمر فعال / شمارش ست → پایان ست → استراحت → تکمیل یا رفتن به بعدی
-```
-
-### ۴. تکمیل روز
-```
-همه تمرینات انجام شد → finishWorkout() → completeDay() → باز شدن روز بعد
-```
-
----
-
-## 📸 اسکرین‌شات‌ها
-
-### صفحه اصلی
-```
-┌─────────────────────────────────────────────┐
-│  برنامه تمرینی ۳ روزه                    ⋮ │
-├─────────────────────────────────────────────┤
-│                                             │
-│  📅 روز اول                     🟢 تکمیل   │
-│  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━  │
-│                                             │
-│  💪 اسکات          ۴ ست × ۱۵ تکرار       │
-│  💪 پرس سینه       ۳ ست × ۱۲ تکرار       │
-│  💪 ددلیفت        ۴ ست × ۱۰ تکرار       │
-│                                             │
-│  [    ✅ انجام شد     ]                     │
-│                                             │
-├─────────────────────────────────────────────┤
-│                                             │
-│  📅 روز دوم                        🔓 باز   │
-│  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━  │
-│                                             │
-│  ⚠️ هنوز تمرینی اضافه نشده                  │
-│                                             │
-│  [    ▶ شروع تمرین    ]                     │
-│                                             │
-├─────────────────────────────────────────────┤
-│                                             │
-│  📅 روز سوم                        🔒 قفل   │
-│  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━  │
-│                                             │
-│  🔒 ابتدا روز قبلی را کامل کنید             │
-│                                             │
-│  [    🔒 قفل شده      ]                     │
-│                                             │
-└─────────────────────────────────────────────┘
-                  [+ افزودن]
-```
-
-### صفحه تمرین فعال
-```
-┌─────────────────────────────────────────────┐
-│  روز اول                            ✕     │
-├─────────────────────────────────────────────┤
-│                                             │
-│              💪                            │
-│                                             │
-│         اسکات                               │
-│      تجهیزات: وزن بدن                       │
-│                                             │
-│  ┌───────────┬───────────┐                │
-│  │   ست      │  تمرین    │                │
-│  │   ۲/۴     │   ۱/۴     │                │
-│  └───────────┴───────────┘                │
-│                                             │
-│                                             │
-│              ۱۵                           │
-│            تکرار                            │
-│                                             │
-│  [     ⏹️ پایان ست     ]                    │
-│                                             │
-│  [ ← رد کردن ]                              │
-│                                             │
-└─────────────────────────────────────────────┘
-```
-
----
-
-## 📈 بهبودهای انجام‌شده
-
-### از MVP به Production-Ready
-
-| نسخه | امتیاز | تغییرات |
-|------|--------|--------|
-| **v1.0 (MVP)** | 4.5/10 | Provider ساده، business logic در UI، بدون error handling |
-| **v2.0 (Current)** | 8.3/10 | Clean Architecture، Riverpod 2، Immutable State، Null Safety |
-
-### بهبودهای کلیدی
-
-| دسته | قبل | بعد |
-|------|------|------|
-| **معماری** | MVC مخلوط | Clean Architecture 3 لایه |
-| **State Management** | ChangeNotifier | StateNotifier + Selectors |
-| **امنیت** | Mutable state | List.unmodifiable + Immutable |
-| **خطا** | بدون handling | try-catch + debugPrint |
-| **crash prevention** | firstWhere بدون check | indexWhere + null check |
-| **performance** | Consumer rebuild همه | Selector granular rebuild |
-| **validation** | ساده | کامل با محدوده‌ها |
-| **testability** | پایین | بالا با separation of concerns |
-
----
-
-## 🤝 نحوه مشارکت
-
-از مشارکت شما استقبال می‌کنیم! 🎉
+### Setup
 
 ```bash
-# ۱. Fork پروژه
+# 1. Clone the repository
+git clone https://github.com/unknownman/exo.git
+cd exo
 
-# ۲. ایجاد branch جدید
-git checkout -b feature/new-feature
+# 2. Install dependencies
+flutter pub get
 
-# ۳. اعمال تغییرات و commit
-git commit -m "Add new feature"
+# 3. Generate Riverpod code
+dart run build_runner build --delete-conflicting-outputs
 
-# ۴. Push به branch
-git push origin feature/new-feature
+# 4. Run the app
+flutter run
+```
 
-# ۵. ایجاد Pull Request
+> **Note**: Build runner takes ~2 minutes on first run. Subsequent incremental builds are faster.
+
+### Regenerating Providers
+
+Whenever you modify a `@riverpod` or `@Riverpod()` annotated file, regenerate:
+
+```bash
+dart run build_runner build --delete-conflicting-outputs
 ```
 
 ---
 
-## 📄 لایسنس
+## Development Guidelines
 
-این پروژه تحت لایسنس **MIT** منتشر شده است.
+### Adding a New Screen
 
-```
-MIT License
+1. Create the screen file in `lib/screens/`.
+2. Add a path constant in `AppRoutes` (`lib/router/app_router.dart`).
+3. Register the route in the `GoRouter` configuration.
+4. Add any new providers in `lib/providers/`.
 
-Copyright (c) 2026 Ali Joder
+### Adding UI Strings
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+All user-facing text lives in `AppStrings` (`lib/core/constants/app_strings.dart`). Never hardcode Persian text in widget files.
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+### State Management Rules
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-```
+- Use `@Riverpod(keepAlive: true)` for app-wide singletons (plan state, active workout).
+- Use `@Riverpod()` (auto-dispose) for ephemeral state (form inputs, screen-scoped data).
+- Use `ref.watch(provider.select(...))` for field-level granularity.
+- Never read a provider inside `build()` without watching it (use `ref.watch` or `ref.listen`).
 
 ---
 
-## 👨‍💻 توسعه‌دهنده
+## License
 
-<div align="center">
-
-**علی جودر**  
-Senior Flutter Developer
-
-📧 ali.masoudi.alavi@gmail.com  
-🌐 [GitHub](https://github.com/unknownman)
-
-</div>
-
----
-
-<div align="center">
-
-ساخته شده با ❤️ و Flutter
-
-</div>
+Private project — all rights reserved.
