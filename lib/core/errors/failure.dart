@@ -7,6 +7,20 @@ class DatabaseFailure extends Failure {
   const DatabaseFailure(super.message);
 }
 
+class NetworkFailure extends Failure {
+  final int? statusCode;
+  const NetworkFailure(super.message, {this.statusCode});
+}
+
+class UnauthorizedFailure extends Failure {
+  const UnauthorizedFailure([super.message = 'Unauthorized']);
+}
+
+class ServerFailure extends Failure {
+  final int? statusCode;
+  const ServerFailure(super.message, {this.statusCode});
+}
+
 class UnknownFailure extends Failure {
   const UnknownFailure(super.message);
 }
