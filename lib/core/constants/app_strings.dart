@@ -72,6 +72,11 @@ class AppStrings {
   static const String repBased = 'تکراری';
   static const String weight = 'وزنه';
   static const String weightUnit = 'ک‌گ';
+  static const String tensionLevel = 'سطح سختی';
+  static const String tensionHint = '۱ تا ۵';
+  static const String tensionUnit = 'سطح';
+  static const String addedWeight = 'وزن اضافه';
+  static const String optional = 'اختیاری';
   static const String reps = 'تکرار';
   static const String weightHint = 'وزنه (ک‌گ)';
   static const String repsHint = 'تکرار';

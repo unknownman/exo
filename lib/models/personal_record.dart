@@ -53,6 +53,7 @@ class PersonalRecord {
 }
 
 double brzycki1RM(double weight, int reps) {
+  if (weight == 0) return reps.toDouble();
   if (reps <= 0 || reps >= 36) return weight;
   return weight * (36 / (37 - reps));
 }

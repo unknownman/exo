@@ -502,6 +502,24 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
     );
   }
 
+  String _weightLabel(String equipment) {
+    if (equipment == 'کش ورزشی') return AppStrings.tensionLevel;
+    if (equipment == 'وزن بدن') return AppStrings.addedWeight;
+    return AppStrings.weight;
+  }
+
+  String _weightHint(String equipment) {
+    if (equipment == 'کش ورزشی') return AppStrings.tensionHint;
+    if (equipment == 'وزن بدن') return AppStrings.optional;
+    return AppStrings.weightHint;
+  }
+
+  String _weightSuffix(String equipment) {
+    if (equipment == 'کش ورزشی') return AppStrings.tensionUnit;
+    if (equipment == 'وزن بدن') return AppStrings.weightUnit;
+    return AppStrings.weightUnit;
+  }
+
   Widget _buildRepsSection(
     ActiveWorkoutState state,
     ActiveWorkoutNotifier provider,
@@ -516,9 +534,9 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
             Expanded(
               child: _buildInputField(
                 controller: _weightController,
-                label: AppStrings.weight,
-                hint: AppStrings.weightHint,
-                suffix: AppStrings.weightUnit,
+                label: _weightLabel(exercise.equipment),
+                hint: _weightHint(exercise.equipment),
+                suffix: _weightSuffix(exercise.equipment),
               ),
             ),
             const SizedBox(width: 16),
@@ -547,7 +565,7 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
                 weight: weight,
                 isCompleted: true,
               );
-              if (weight > 0) {
+              if (weight > 0 || exercise.equipment == 'وزن بدن') {
                 _checkForPR(exercise, weight, reps);
               }
               provider.finishSet();
