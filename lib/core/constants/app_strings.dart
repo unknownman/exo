@@ -199,4 +199,19 @@ class AppStrings {
 
   // ===================== Validation =====================
   static const String setsCountError = 'تعداد ست نباید بیشتر از ۲۰ باشد';
+
+  // ===================== AI Recommendations =====================
+  static const String aiRecommendationTitle = 'پیشنهاد هوشمند';
+  static const String aiGeneratingPlan = 'در حال تحلیل و ارائه برنامه هوشمند...';
+  static const String aiPlanReady = 'برنامه هوشمند شما آماده است';
+  static const String aiAcceptPlan = 'ذخیره و فعال‌سازی برنامه';
+  static const String aiRejectPlan = 'رد پیشنهاد';
+  static const String aiNoCredits = 'اعتبار شما برای دریافت برنامه هوشمند کافی نیست';
+  static const String aiPlanName = 'برنامه هوشمند اگزو';
+  static const String aiPlanDescription = 'برنامه شخصی‌سازی‌شده بر اساس عملکرد و اهداف شما';
+  static const String aiError = 'خطا در دریافت برنامه هوشمند. لطفاً بعداً تلاش کنید.';
+  static const String aiNotEnoughData = 'داده‌های تمرینی کافی برای تحلیل وجود ندارد. حداقل ۳ جلسه تمرین نیاز است.';
+  static const String aiDayPrefix = 'روز';
+  static const String aiInsufficientData = 'تعداد جلسات تمرینی برای دریافت برنامه هوشمند کافی نیست';
+  static const String aiPlanAccepted = 'برنامه هوشمند با موفقیت ذخیره و فعال شد';
 }

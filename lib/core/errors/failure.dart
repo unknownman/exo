@@ -25,6 +25,14 @@ class UnknownFailure extends Failure {
   const UnknownFailure(super.message);
 }
 
+class InsufficientCreditsFailure extends Failure {
+  const InsufficientCreditsFailure([super.message = 'اعتبار کافی نیست']);
+}
+
+class NotFoundFailure extends Failure {
+  const NotFoundFailure(super.message);
+}
+
 sealed class Result<T> {
   const Result();
 
