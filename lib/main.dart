@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive_flutter/hive_flutter.dart';
-import 'package:exo/screens/shell_screen.dart';
+import 'package:exo/router/app_router.dart';
 import 'package:exo/core/theme/app_theme.dart';
 import 'package:exo/core/constants/app_constants.dart';
 import 'package:exo/core/constants/app_strings.dart';
@@ -48,12 +48,13 @@ void main() async {
   );
 }
 
-class ExoApp extends StatelessWidget {
+class ExoApp extends ConsumerWidget {
   const ExoApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
+  Widget build(BuildContext context, WidgetRef ref) {
+    final router = ref.watch(routerProvider);
+    return MaterialApp.router(
       debugShowCheckedModeBanner: false,
       title: AppStrings.appName,
       locale: const Locale('fa', 'IR'),
@@ -67,13 +68,13 @@ class ExoApp extends StatelessWidget {
       ],
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
+      routerConfig: router,
       builder: (context, child) {
         return Directionality(
           textDirection: TextDirection.rtl,
           child: child!,
         );
       },
-      home: const ShellScreen(),
     );
   }
 }

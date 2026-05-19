@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:exo/providers/workout_provider.dart';
 import 'package:exo/core/constants/app_strings.dart';
 
@@ -63,7 +64,7 @@ class _CreatePlanScreenState extends ConsumerState<CreatePlanScreen> {
     );
 
     if (mounted) {
-      Navigator.of(context).pop();
+      context.pop();
     }
   }
 

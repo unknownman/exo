@@ -1,21 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:exo/screens/dashboard_screen.dart';
-import 'package:exo/screens/workout_history_screen.dart';
-import 'package:exo/screens/plan_editor_screen.dart';
-import 'package:exo/screens/profile_screen.dart';
+import 'package:go_router/go_router.dart';
 import 'package:exo/providers/active_workout_provider.dart';
 import 'package:exo/core/theme/app_theme.dart';
 import 'package:exo/core/constants/app_strings.dart';
 
-final selectedTabProvider = StateProvider<int>((ref) => 0);
-
 class ShellScreen extends ConsumerWidget {
-  const ShellScreen({super.key});
+  final StatefulNavigationShell navigationShell;
+
+  const ShellScreen({super.key, required this.navigationShell});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final selectedTab = ref.watch(selectedTabProvider);
+    final shell = navigationShell;
 
     ref.listen(
       activeWorkoutNotifierProvider.select((s) => s.snapshotRestoredMessage),
@@ -30,7 +27,7 @@ class ShellScreen extends ConsumerWidget {
                 action: SnackBarAction(
                   label: 'ادامه',
                   onPressed: () {
-                    ref.read(selectedTabProvider.notifier).state = 0;
+                    shell.goBranch(0);
                   },
                 ),
               ),
@@ -42,19 +39,10 @@ class ShellScreen extends ConsumerWidget {
     );
 
     return Scaffold(
-      body: IndexedStack(
-        index: selectedTab,
-        children: const [
-          DashboardScreen(),
-          WorkoutHistoryScreen(),
-          PlanEditorScreen(),
-          ProfileScreen(),
-        ],
-      ),
+      body: navigationShell,
       bottomNavigationBar: NavigationBar(
-        selectedIndex: selectedTab,
-        onDestinationSelected: (index) =>
-            ref.read(selectedTabProvider.notifier).state = index,
+        selectedIndex: navigationShell.currentIndex,
+        onDestinationSelected: (index) => navigationShell.goBranch(index),
         indicatorColor: AppTheme.tealPrimary.withAlpha(30),
         destinations: const [
           NavigationDestination(

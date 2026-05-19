@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:exo/models/exercise.dart';
 import 'package:exo/models/exercise_media.dart';
 import 'package:exo/providers/workout_provider.dart';
@@ -138,7 +139,7 @@ class _AddExerciseScreenState extends ConsumerState<AddExerciseScreen> {
         .read(workoutNotifierProvider.notifier)
         .addExercise(_selectedDayId!, exercise);
     if (mounted) {
-      Navigator.of(context).pop();
+      context.pop();
     }
   }
 

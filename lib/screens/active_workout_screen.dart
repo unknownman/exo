@@ -1,15 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:exo/models/exercise.dart';
 import 'package:exo/models/exercise_media.dart';
 import 'package:exo/models/workout_log.dart';
 import 'package:exo/providers/active_workout_provider.dart';
 import 'package:exo/providers/workout_provider.dart';
 import 'package:exo/providers/analytics_provider.dart';
+import 'package:exo/router/app_router.dart';
 import 'package:exo/core/theme/app_theme.dart';
 import 'package:exo/widgets/tts_toggle_button.dart';
 import 'package:exo/widgets/exercise_media_widget.dart';
-import 'package:exo/screens/rest_screen.dart';
 import 'package:exo/core/constants/app_strings.dart';
 import 'package:exo/core/utils/persian_digits.dart';
 
@@ -138,15 +139,10 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
       (_, isResting) {
         if (isResting) {
           _isRestOpen = true;
-          Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (_) => const RestScreen(),
-              fullscreenDialog: true,
-            ),
-          );
+          context.push(AppRoutes.rest);
         } else if (_isRestOpen) {
           _isRestOpen = false;
-          Navigator.of(context).pop();
+          context.pop();
         }
       },
     );
@@ -211,7 +207,7 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
               ),
               const SizedBox(height: 24),
               ElevatedButton(
-                onPressed: () => Navigator.of(context).pop(),
+                onPressed: () => context.pop(),
                 child: const Text(AppStrings.back),
               ),
             ],
@@ -249,14 +245,13 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
                   final activeState = ref.read(activeWorkoutNotifierProvider);
                   final dayId = activeState.dayId;
                   final sessionData = Map<String, List<SetLog>>.from(activeState.currentSessionData);
-                  final navigator = Navigator.of(context);
                   if (dayId != null) {
                     await ref
                         .read(workoutNotifierProvider.notifier)
                         .completeDay(dayId, sessionData: sessionData);
                   }
                   await provider.finishWorkout();
-                  navigator.popUntil((route) => route.isFirst);
+                  if (context.mounted) context.go(AppRoutes.dashboard);
                 },
                 icon: const Icon(Icons.check),
                 label: const Text(AppStrings.done),
@@ -316,14 +311,9 @@ class _ActiveWorkoutScreenState extends ConsumerState<ActiveWorkoutScreen> {
             child: const Text(AppStrings.dismiss),
           ),
           ElevatedButton(
-            onPressed: () {
-              final navigator = Navigator.of(context);
-              provider.cancelWorkout().whenComplete(() {
-                if (mounted) {
-                  navigator.pop();
-                  navigator.pop();
-                }
-              });
+            onPressed: () async {
+              await provider.cancelWorkout();
+              if (context.mounted) context.go(AppRoutes.dashboard);
             },
             child: const Text(AppStrings.exit),
           ),

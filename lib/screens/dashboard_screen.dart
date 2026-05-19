@@ -1,14 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:exo/models/exercise.dart';
 import 'package:exo/models/workout_log.dart';
 import 'package:exo/models/workout_plan.dart';
 import 'package:exo/domain/services/analytics_service.dart';
+import 'package:exo/router/app_router.dart';
 import 'package:exo/providers/workout_provider.dart';
 import 'package:exo/providers/active_workout_provider.dart';
-import 'package:exo/screens/active_workout_screen.dart';
-import 'package:exo/screens/add_exercise_screen.dart';
-import 'package:exo/screens/create_plan_screen.dart';
 import 'package:exo/widgets/tts_toggle_button.dart';
 import 'package:exo/widgets/workout_calendar_widget.dart';
 import 'package:exo/core/theme/app_theme.dart';
@@ -61,9 +60,7 @@ class DashboardScreen extends ConsumerWidget {
             actions: const [TTSToggleButton()],
           ),
           floatingActionButton: FloatingActionButton(
-            onPressed: () => Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => const AddExerciseScreen()),
-            ),
+            onPressed: () => context.push(AppRoutes.addExercise),
             child: const Icon(Icons.add),
           ),
           body: Column(
@@ -92,9 +89,7 @@ class DashboardScreen extends ConsumerWidget {
             const Text(AppStrings.noPlanYet, style: TextStyle(fontSize: 20)),
             const SizedBox(height: 32),
             ElevatedButton.icon(
-              onPressed: () => Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const CreatePlanScreen()),
-              ),
+              onPressed: () => context.push(AppRoutes.createPlan),
               icon: const Icon(Icons.add),
               label: const Text(AppStrings.createNewPlan),
             ),
@@ -174,11 +169,7 @@ class _PlanSelector extends ConsumerWidget {
           onChanged: (value) {
             if (value == null) return;
             if (value == _addNewPlanValue) {
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (_) => const CreatePlanScreen(),
-                ),
-              );
+              context.push(AppRoutes.createPlan);
             } else {
               ref
                   .read(workoutNotifierProvider.notifier)
@@ -364,10 +355,8 @@ class _StartWorkoutButton extends ConsumerWidget {
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
       child: ElevatedButton.icon(
-        onPressed: () => Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (_) => ActiveWorkoutScreen(dayId: currentDay.id),
-          ),
+        onPressed: () => context.push(
+          '${AppRoutes.activeWorkout}/${currentDay.id}',
         ),
         icon: Icon(isCompleted ? Icons.replay : Icons.play_arrow),
         label: Text(

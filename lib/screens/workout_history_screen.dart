@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:exo/providers/workout_provider.dart';
 import 'package:exo/providers/analytics_provider.dart';
 import 'package:exo/models/workout_log.dart';
 import 'package:exo/models/personal_record.dart';
 import 'package:exo/domain/services/analytics_service.dart';
-import 'package:exo/screens/exercise_analytics_screen.dart';
+import 'package:exo/router/app_router.dart';
 import 'package:exo/widgets/workout_calendar_widget.dart';
 import 'package:exo/core/theme/app_theme.dart';
-import 'package:exo/screens/shell_screen.dart';
 import 'package:exo/core/constants/app_strings.dart';
 import 'package:exo/core/utils/persian_digits.dart';
 
@@ -99,7 +99,7 @@ class WorkoutHistoryScreen extends ConsumerWidget {
             const SizedBox(height: 28),
             ElevatedButton.icon(
               onPressed: () {
-                ref.read(selectedTabProvider.notifier).state = 0;
+                StatefulNavigationShell.of(context).goBranch(0);
               },
               icon: const Icon(Icons.play_arrow, size: 20),
               label: const Text(AppStrings.startFirstWorkout),
@@ -289,13 +289,9 @@ class _WorkoutLogCardState extends ConsumerState<_WorkoutLogCard> {
             return Padding(
               padding: const EdgeInsets.symmetric(vertical: 4),
               child: InkWell(
-                onTap: () => Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (_) => ExerciseAnalyticsScreen(
-                      exerciseId: perf.exerciseId,
-                      exerciseName: perf.exerciseName,
-                    ),
-                  ),
+                onTap: () => context.push(
+                  '${AppRoutes.exerciseAnalytics}/${perf.exerciseId}',
+                  extra: perf.exerciseName,
                 ),
                 borderRadius: BorderRadius.circular(8),
                 child: Padding(

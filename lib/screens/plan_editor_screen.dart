@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:exo/models/workout_plan.dart';
 import 'package:exo/models/exercise.dart';
 import 'package:exo/models/exercise_media.dart';
 import 'package:exo/providers/workout_provider.dart';
 import 'package:exo/providers/media_provider.dart';
+import 'package:exo/router/app_router.dart';
 import 'package:exo/widgets/exercise_media_widget.dart';
-import 'package:exo/screens/exercise_analytics_screen.dart';
 import 'package:exo/core/theme/app_theme.dart';
 import 'package:exo/core/constants/app_strings.dart';
 import 'package:exo/core/utils/persian_digits.dart';
@@ -185,9 +186,7 @@ class _PlanEditorScreenState extends ConsumerState<PlanEditorScreen> {
   }
 
   void _openDayDetail(WorkoutDay day) {
-    Navigator.of(
-      context,
-    ).push(MaterialPageRoute(builder: (_) => DayDetailScreen(dayId: day.id)));
+    context.push('${AppRoutes.dayDetail}/${day.id}');
   }
 
   void _deleteDay(String dayId) {
@@ -521,13 +520,9 @@ class _ExerciseCard extends StatelessWidget {
               IconButton(
                 icon: Icon(Icons.bar_chart, color: AppTheme.tealPrimary),
                 onPressed: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) => ExerciseAnalyticsScreen(
-                        exerciseId: exercise.id,
-                        exerciseName: exercise.name,
-                      ),
-                    ),
+                  context.push(
+                    '${AppRoutes.exerciseAnalytics}/${exercise.id}',
+                    extra: exercise.name,
                   );
                 },
                 tooltip: AppStrings.exerciseAnalytics,
@@ -844,7 +839,7 @@ class _AddExerciseSheetState extends ConsumerState<_AddExerciseSheet> {
           .addExercise(widget.dayId, exercise);
     }
     if (mounted) {
-      Navigator.of(context).pop();
+      context.pop();
     }
   }
 }
