@@ -20,8 +20,7 @@ class ExerciseAnalyticsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final analytics = ref.read(analyticsNotifierProvider.notifier)
-        .getExerciseAnalytics(exerciseId);
+    final analytics = ref.watch(exerciseAnalyticsProvider(exerciseId));
 
     return Scaffold(
       appBar: AppBar(title: Text(exerciseName)),

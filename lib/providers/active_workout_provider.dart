@@ -199,22 +199,26 @@ class ActiveWorkoutNotifier extends _$ActiveWorkoutNotifier {
     double? weight,
     bool? isCompleted,
   }) {
-    final current = Map<String, List<SetLog>>.from(state.currentSessionData);
-    final existingSets = List<SetLog>.from(current[exerciseId] ?? []);
+    final existingSets = state.currentSessionData[exerciseId] ?? const [];
     final setIndex = existingSets.indexWhere((s) => s.setNumber == setNumber);
-    final setLog = SetLog(
+    final newSetLog = SetLog(
       setNumber: setNumber,
       reps: reps ?? (setIndex >= 0 ? existingSets[setIndex].reps : 0),
       weight: weight ?? (setIndex >= 0 ? existingSets[setIndex].weight : 0),
       isCompleted: isCompleted ?? (setIndex >= 0 ? existingSets[setIndex].isCompleted : false),
     );
+
+    if (setIndex >= 0 && existingSets[setIndex] == newSetLog) return;
+
+    final newSets = List<SetLog>.from(existingSets);
     if (setIndex >= 0) {
-      existingSets[setIndex] = setLog;
+      newSets[setIndex] = newSetLog;
     } else {
-      existingSets.add(setLog);
+      newSets.add(newSetLog);
     }
-    current[exerciseId] = existingSets;
-    state = state.copyWith(currentSessionData: current);
+    state = state.copyWith(
+      currentSessionData: {...state.currentSessionData, exerciseId: newSets},
+    );
   }
 
   void finishSet() {

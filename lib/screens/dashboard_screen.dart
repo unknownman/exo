@@ -393,12 +393,9 @@ class _CalendarSection extends ConsumerWidget {
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-      child: SizedBox(
-        height: 260,
-        child: WorkoutCalendarWidget(
-          workoutDays: workoutDays,
-          workoutsThisWeek: weeklyFreq,
-        ),
+      child: WorkoutCalendarWidget(
+        workoutDays: workoutDays,
+        workoutsThisWeek: weeklyFreq,
       ),
     );
   }
@@ -412,7 +409,6 @@ class _ExerciseListView extends ConsumerWidget {
     final currentDay = ref.watch(
       workoutNotifierProvider.select((s) => s.valueOrNull?.currentDay),
     );
-    final activeWorkout = ref.watch(activeWorkoutNotifierProvider);
     if (currentDay == null || currentDay.exercises.isEmpty) {
       return Center(
         child: Column(
@@ -434,7 +430,17 @@ class _ExerciseListView extends ConsumerWidget {
       );
     }
 
-    final isActiveMatch = activeWorkout.hasDay && activeWorkout.dayId == currentDay.id;
+    final hasDay = ref.watch(
+      activeWorkoutNotifierProvider.select((s) => s.hasDay),
+    );
+    final activeDayId = ref.watch(
+      activeWorkoutNotifierProvider.select((s) => s.dayId),
+    );
+    final sessionData = ref.watch(
+      activeWorkoutNotifierProvider.select((s) => s.currentSessionData),
+    );
+
+    final isActiveMatch = hasDay && activeDayId == currentDay.id;
 
     return ListView.separated(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
@@ -444,7 +450,7 @@ class _ExerciseListView extends ConsumerWidget {
         final exercise = currentDay.exercises[index];
         int completedSets = 0;
         if (isActiveMatch) {
-          final sessionSets = activeWorkout.currentSessionData[exercise.id] ?? [];
+          final sessionSets = sessionData[exercise.id] ?? [];
           completedSets = sessionSets.where((s) => s.isCompleted).length;
         }
         return _ExerciseTile(

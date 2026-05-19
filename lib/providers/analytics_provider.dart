@@ -29,22 +29,14 @@ class AnalyticsState {
 class AnalyticsNotifier extends _$AnalyticsNotifier {
   @override
   AnalyticsState build() {
-    ref.watch(workoutNotifierProvider).whenOrNull(
-      data: (state) {
-        final service = AnalyticsService(state.workoutLogs);
-        return AnalyticsState(
-          bestLifts: service.bestLifts,
-          exercisePRs: service.exercisesWithPRs,
-        );
-      },
+    final logs = ref.watch(
+      workoutNotifierProvider.select((s) => s.valueOrNull?.workoutLogs ?? const []),
     );
-    return const AnalyticsState();
-  }
-
-  ExerciseAnalytics getExerciseAnalytics(String exerciseId) {
-    final logs = ref.read(workoutNotifierProvider).valueOrNull?.workoutLogs ?? [];
     final service = AnalyticsService(logs);
-    return service.getExerciseAnalytics(exerciseId);
+    return AnalyticsState(
+      bestLifts: service.bestLifts,
+      exercisePRs: service.exercisesWithPRs,
+    );
   }
 
   bool isNewPR(String exerciseId, double weight, int reps) {
@@ -52,4 +44,13 @@ class AnalyticsNotifier extends _$AnalyticsNotifier {
     final service = AnalyticsService(logs);
     return service.isRecordForExercise(exerciseId, weight, reps);
   }
+}
+
+@riverpod
+ExerciseAnalytics exerciseAnalytics(ExerciseAnalyticsRef ref, String exerciseId) {
+  final logs = ref.watch(
+    workoutNotifierProvider.select((s) => s.valueOrNull?.workoutLogs ?? const []),
+  );
+  final service = AnalyticsService(logs);
+  return service.getExerciseAnalytics(exerciseId);
 }
